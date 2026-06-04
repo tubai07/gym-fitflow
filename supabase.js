@@ -190,6 +190,7 @@ window.db = {
   subscribeToUserExercises(workoutId, callback) {
     if (!this.isConfigured() || !supabaseClient) return () => {};
     
+    console.log(`Subscribing to realtime changes for workout: ${workoutId}`);
     const channel = supabaseClient
       .channel(`realtime:user_exercises:${workoutId}`)
       .on(
@@ -201,12 +202,16 @@ window.db = {
           filter: `workout_id=eq.${workoutId}`
         },
         (payload) => {
+          console.log("Realtime payload received:", payload);
           callback(payload);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log(`Realtime subscription status for ${workoutId}:`, status, err);
+      });
 
     return () => {
+      console.log(`Unsubscribing from realtime changes for workout: ${workoutId}`);
       supabaseClient.removeChannel(channel);
     };
   }
