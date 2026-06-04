@@ -1032,6 +1032,11 @@ body.modal-open {
   transition: color 0.15s ease;
 }
 
+.exercise-drag-handle svg {
+  width: 20px;
+  height: 20px;
+}
+
 .exercise-drag-handle:hover {
   color: var(--purple);
 }
