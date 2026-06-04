@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>FitFlow - Authenticate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="shell topbar__shell">
+      <a href="index.html" class="back" aria-label="Go home">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="index.html" class="logo">Fit<span>Flow</span></a>
+    </div>
+  </header>
+  
+  <main class="main auth-main">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button type="button" id="tabLogin" class="auth-tab active">Log In</button>
+        <button type="button" id="tabSignup" class="auth-tab">Sign Up</button>
+      </div>
+      
+      <div class="auth-content">
+        <!-- Log In Form -->
+        <form id="loginForm" class="auth-form">
+          <h2>Welcome Back</h2>
+          <p class="auth-subtitle">Log in to sync your custom workouts</p>
+          
+          <div class="form-group">
+            <label for="loginEmail">Email Address</label>
+            <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+          </div>
+          
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          
+          <div id="loginMessage" class="auth-message" hidden></div>
+          
+          <button type="submit" class="auth-submit">Log In</button>
+        </form>
+
+        <!-- Sign Up Form -->
+        <form id="signupForm" class="auth-form" hidden>
+          <h2>Create Account</h2>
+          <p class="auth-subtitle">Save progress and customize your workout schedule</p>
+          
+          <div class="form-group">
+            <label for="signupName">Full Name</label>
+            <input type="text" id="signupName" placeholder="Your Name" required autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label for="signupEmail">Email Address</label>
+            <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email">
+          </div>
+          
+          <div class="form-group">
+            <label for="signupPhone">Mobile Number</label>
+            <div class="phone-input-wrapper">
+              <span class="phone-prefix"><span class="flag-emoji">🇮🇳</span></span>
+              <input type="tel" id="signupPhone" placeholder="9876543210" required autocomplete="tel" pattern="[6-9]\d{9}" title="Please enter a valid 10-digit mobile number.">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="signupPassword">Password</label>
+            <input type="password" id="signupPassword" placeholder="Minimum 6 characters" required autocomplete="new-password" minlength="6">
+          </div>
+          
+          <div id="signupMessage" class="auth-message" hidden></div>
+          
+          <button type="submit" class="auth-submit">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js" defer></script>
+  <script src="supabase.js" defer></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const tabLogin = document.getElementById("tabLogin");
+      const tabSignup = document.getElementById("tabSignup");
+      const loginForm = document.getElementById("loginForm");
+      const signupForm = document.getElementById("signupForm");
+      const loginMessage = document.getElementById("loginMessage");
+      const signupMessage = document.getElementById("signupMessage");
+
+      // Switch tabs
+      tabLogin.addEventListener("click", () => {
+        tabLogin.classList.add("active");
+        tabSignup.classList.remove("active");
+        loginForm.hidden = false;
+        signupForm.hidden = true;
+      });
+
+      tabSignup.addEventListener("click", () => {
+        tabSignup.classList.add("active");
+        tabLogin.classList.remove("active");
+        signupForm.hidden = false;
+        loginForm.hidden = true;
+      });
+
+      // Handle Log In
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        loginMessage.hidden = true;
+        
+        if (!window.db || !window.db.isConfigured()) {
+          loginMessage.textContent = "Supabase is not configured yet. Please configure it in config.js.";
+          loginMessage.className = "auth-message alert-error";
+          loginMessage.hidden = false;
+          return;
+        }
+
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        const btn = loginForm.querySelector("button[type='submit']");
+        btn.disabled = true;
+        btn.textContent = "Logging in...";
+
+        try {
+          await window.db.signIn(email, password);
+          loginMessage.textContent = "Success! Redirecting...";
+          loginMessage.className = "auth-message alert-success";
+          loginMessage.hidden = false;
+          setTimeout(() => {
+            location.href = "index.html";
+          }, 1000);
+        } catch (err) {
+          loginMessage.textContent = err.message || "An error occurred during log in.";
+          loginMessage.className = "auth-message alert-error";
+          loginMessage.hidden = false;
+          btn.disabled = false;
+          btn.textContent = "Log In";
+        }
+      });
+
+      // Handle Sign Up
+      signupForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        signupMessage.hidden = true;
+
+        if (!window.db || !window.db.isConfigured()) {
+          signupMessage.textContent = "Supabase is not configured yet. Please configure it in config.js.";
+          signupMessage.className = "auth-message alert-error";
+          signupMessage.hidden = false;
+          return;
+        }
+
+        const name = document.getElementById("signupName").value.trim();
+        const email = document.getElementById("signupEmail").value.trim();
+        const rawPhone = document.getElementById("signupPhone").value.trim();
+        if (!/^[6-9]\d{9}$/.test(rawPhone)) {
+          signupMessage.textContent = "Please enter a valid 10-digit mobile number.";
+          signupMessage.className = "auth-message alert-error";
+          signupMessage.hidden = false;
+          return;
+        }
+
+        const phone = "+91" + rawPhone;
+        const password = document.getElementById("signupPassword").value;
+        const btn = signupForm.querySelector("button[type='submit']");
+        btn.disabled = true;
+        btn.textContent = "Creating account...";
+
+        try {
+          await window.db.signUp(email, password, phone, name);
+          signupMessage.textContent = "Registration successful! You can now log in.";
+          signupMessage.className = "auth-message alert-success";
+          signupMessage.hidden = false;
+          setTimeout(() => {
+            tabLogin.click();
+            document.getElementById("loginEmail").value = email;
+            document.getElementById("loginPassword").value = "";
+            signupForm.reset();
+            signupMessage.hidden = true;
+          }, 2000);
+        } catch (err) {
+          signupMessage.textContent = err.message || "An error occurred during registration.";
+          signupMessage.className = "auth-message alert-error";
+          signupMessage.hidden = false;
+          btn.disabled = false;
+          btn.textContent = "Create Account";
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>FitFlow Workout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="shell topbar__shell">
+      <button type="button" class="back" onclick="history.length > 1 ? history.back() : (location.href='index.html')" aria-label="Go back">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <a href="index.html" class="logo">Fit<span>Flow</span></a>
+      <div id="userProfile" class="user-profile-header"></div>
+    </div>
+  </header>
+  <main class="main detail">
+    <header class="detail-header">
+      <h1 id="title" class="page-title">Push Day</h1>
+      <button type="button" id="editToggleBtn" class="edit-toggle-btn" style="display:none;" aria-label="Toggle Edit Mode">Edit Plan</button>
+    </header>
+    <section id="exerciseList" class="exercise-list" aria-label="Exercises"></section>
+    <button type="button" id="addExerciseBtn" class="add-exercise-btn" style="display:none;" aria-label="Add new exercise">+ Add Exercise</button>
+    <footer class="footer">Built by <a href="https://www.instagram.com/tubai10x/" target="_blank" rel="noopener">tubai10x</a></footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js" defer></script>
+  <script src="supabase.js" defer></script>
+  <script src="icons.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
