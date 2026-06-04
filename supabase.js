@@ -185,5 +185,29 @@ window.db = {
     });
     if (error) throw error;
     return true;
+  },
+
+  subscribeToUserExercises(workoutId, callback) {
+    if (!this.isConfigured() || !supabaseClient) return () => {};
+    
+    const channel = supabaseClient
+      .channel(`realtime:user_exercises:${workoutId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_exercises",
+          filter: `workout_id=eq.${workoutId}`
+        },
+        (payload) => {
+          callback(payload);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
   }
 };

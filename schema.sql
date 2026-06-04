@@ -72,3 +72,6 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Enable Realtime replication for the user_exercises table
+alter publication supabase_realtime add table public.user_exercises;

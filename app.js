@@ -980,6 +980,29 @@ document.addEventListener("DOMContentLoaded", () => {
           if (list) {
             // Asynchronously fetch latest custom exercises from Supabase
             await loadSupabaseExercises(session);
+
+            // Subscribe to realtime updates for this workout
+            const params = new URLSearchParams(location.search);
+            const day = params.get("day") || "push-day";
+            const workout = WORKOUTS.find((w) => w.id === day) || WORKOUTS.find((w) => w.id === "push-day") || WORKOUTS[0];
+            const workoutId = workout.id;
+
+            if (window.realtimeUnsubscribe) {
+              window.realtimeUnsubscribe();
+            }
+
+            window.realtimeUnsubscribe = db.subscribeToUserExercises(workoutId, async (payload) => {
+              // Ensure we do not disrupt active user editing or dragging
+              const isEditing = !!list.querySelector(".inline-edit-input");
+              const isDragging = !!list.querySelector(".dragging");
+              
+              if (!isEditing && !isDragging) {
+                console.log("Realtime sync: exercises updated on Supabase, refreshing UI...", payload);
+                await loadSupabaseExercises(session);
+              } else {
+                console.log("Realtime sync: update ignored to protect active user editing/dragging.");
+              }
+            });
           }
         } else {
           // If guest tries to access workout details directly, redirect to login
