@@ -38,7 +38,14 @@ function renderHomeGrid(session) {
 
   grid.innerHTML = ""; // Clear existing cards to prevent duplication
   const frag = document.createDocumentFragment();
-  const hasSession = !!session || (typeof db === "undefined" || !db.isConfigured());
+  
+  // A user is considered to have a session if:
+  // 1. A session object is actively passed in
+  // 2. The DB is not configured (Local Mode)
+  // 3. A cached token exists in localStorage (which resolves the initial page load race condition)
+  const hasSession = !!session || 
+                    (typeof db === "undefined" || !db.isConfigured()) || 
+                    (localStorage.getItem("fitflow-auth-token") !== null);
 
   WORKOUTS.forEach((item) => {
     const card = document.createElement("a");
@@ -1556,14 +1563,14 @@ document.addEventListener("DOMContentLoaded", () => {
     db.getSession()
       .then(async (session) => {
         if (session) {
-          // Initialize all workouts if not done yet
-          if (!session.user.user_metadata?.is_initialized) {
-            await initializeAllUserWorkouts(session.user);
+          if (isHomePage) {
+            // Update links to point to workouts for authenticated user immediately
+            renderHomeGrid(session);
           }
 
-          if (isHomePage) {
-            // Update links to point to workouts for authenticated user
-            renderHomeGrid(session);
+          // Initialize all workouts in the background if not done yet (non-blocking)
+          if (!session.user.user_metadata?.is_initialized) {
+            initializeAllUserWorkouts(session.user);
           }
 
           if (isBmiPage) {

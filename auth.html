@@ -104,12 +104,27 @@
   <script src="supabase.js" defer></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // Immediate redirect if already logged in to prevent layout flash/access to login page
+      if (localStorage.getItem("fitflow-auth-token") !== null) {
+        location.href = "index.html";
+        return;
+      }
+
       const tabLogin = document.getElementById("tabLogin");
       const tabSignup = document.getElementById("tabSignup");
       const loginForm = document.getElementById("loginForm");
       const signupForm = document.getElementById("signupForm");
       const loginMessage = document.getElementById("loginMessage");
       const signupMessage = document.getElementById("signupMessage");
+
+      // Double-check with async getSession just in case of any edge cases (e.g. token expired but still in storage)
+      if (window.db && window.db.isConfigured()) {
+        window.db.getSession().then((session) => {
+          if (session) {
+            location.href = "index.html";
+          }
+        }).catch(err => console.error("Session check failed:", err));
+      }
 
       // Switch tabs
       tabLogin.addEventListener("click", () => {
@@ -192,17 +207,39 @@
         btn.textContent = "Creating account...";
 
         try {
-          await window.db.signUp(email, password, phone, name, gender);
-          signupMessage.textContent = "Registration successful! You can now log in.";
-          signupMessage.className = "auth-message alert-success";
-          signupMessage.hidden = false;
-          setTimeout(() => {
-            tabLogin.click();
-            document.getElementById("loginEmail").value = email;
-            document.getElementById("loginPassword").value = "";
-            signupForm.reset();
-            signupMessage.hidden = true;
-          }, 2000);
+          const signUpData = await window.db.signUp(email, password, phone, name, gender);
+          
+          if (signUpData && signUpData.session) {
+            signupMessage.textContent = "Registration successful! Redirecting to home...";
+            signupMessage.className = "auth-message alert-success";
+            signupMessage.hidden = false;
+            setTimeout(() => {
+              location.href = "index.html";
+            }, 1500);
+          } else {
+            // Try signing in automatically with the credentials
+            signupMessage.textContent = "Registration successful! Logging in...";
+            signupMessage.className = "auth-message alert-success";
+            signupMessage.hidden = false;
+            try {
+              await window.db.signIn(email, password);
+              setTimeout(() => {
+                location.href = "index.html";
+              }, 1500);
+            } catch (signInErr) {
+              // Fallback if sign in fails (e.g. email confirmation required)
+              signupMessage.textContent = "Registration successful! Please confirm your email to log in.";
+              signupMessage.className = "auth-message alert-success";
+              signupMessage.hidden = false;
+              setTimeout(() => {
+                tabLogin.click();
+                document.getElementById("loginEmail").value = email;
+                document.getElementById("loginPassword").value = "";
+                signupForm.reset();
+                signupMessage.hidden = true;
+              }, 3000);
+            }
+          }
         } catch (err) {
           signupMessage.textContent = err.message || "An error occurred during registration.";
           signupMessage.className = "auth-message alert-error";
