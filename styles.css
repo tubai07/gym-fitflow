@@ -1386,16 +1386,24 @@ body.modal-open {
 
 .exercise--meal {
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.14s ease;
+  border: 1px solid transparent;
+  transition: background 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+              transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+              box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+              border-color 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .exercise--meal:hover {
-  background: rgba(98,80,244,0.04);
-  transform: translateX(2px);
+  background: #faf9ff;
+  border-color: rgba(98, 80, 244, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 38px rgba(98, 80, 244, 0.07), 0 6px 20px rgba(0, 0, 0, 0.02);
 }
 
 .exercise--meal:active {
-  transform: scale(0.98);
+  transform: translateY(-1px) scale(0.985);
+  box-shadow: 0 12px 20px rgba(98, 80, 244, 0.03), 0 3px 8px rgba(0, 0, 0, 0.01);
+  background: rgba(98, 80, 244, 0.01);
 }
 
 .exercise-meta--meal-preview {

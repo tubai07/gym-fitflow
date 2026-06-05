@@ -975,10 +975,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
         });
       });
 
-      const mealThumb = document.createElement("div");
-      mealThumb.className = "meal-thumb";
-      mealThumb.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6h3.5a1.5 1.5 0 0 1 0 3H16v4"/></svg>`;
-      item.append(dragHandle, mealThumb, info, deleteBtn);
+      item.append(dragHandle, info, deleteBtn);
 
     // ── Exercise with video ────────────────────────────────────────────────
     } else if (videoId) {
@@ -1122,9 +1119,6 @@ function openDietMealPopup(ex, workoutId, exercises, isSupabaseLoaded, list, onC
 
   panel.innerHTML = `
     <div class="diet-popup-header">
-      <div class="diet-popup-meal-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6h3.5a1.5 1.5 0 0 1 0 3H16v4"/></svg>
-      </div>
       <div>
         <h2 class="diet-popup-title">${escapeHtml(ex.name)}</h2>
         <p class="diet-popup-subtitle">Track your food items</p>
