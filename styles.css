@@ -1717,6 +1717,32 @@ body.modal-open {
   transform: scale(0.97);
 }
 
+.diet-save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: #10b981;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.14s ease;
+  letter-spacing: -0.01em;
+}
+
+.diet-save-btn:hover {
+  background: #059669;
+}
+
+.diet-save-btn:active {
+  transform: scale(0.97);
+}
+
 /* ── Profile Sidebar (Sliding Drawer) ────────────────────────────────── */
 .profile-sidebar {
   position: fixed;
