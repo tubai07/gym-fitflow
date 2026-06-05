@@ -516,8 +516,14 @@ async function handleProfileUpdate(e) {
   const genderEl = e.target.querySelector("input[name='profileGender']:checked");
   const gender = genderEl ? genderEl.value : null;
 
-  const weightVal = parseInt(document.getElementById("bmiWeight").value, 10);
-  const heightVal = parseInt(document.getElementById("bmiHeight").value, 10);
+  const session = typeof db !== "undefined" ? db.getCurrentSession() : null;
+  const defaultWeight = session?.user?.user_metadata?.weight || null;
+  const defaultHeight = session?.user?.user_metadata?.height || null;
+
+  const wEl = document.getElementById("bmiWeight");
+  const hEl = document.getElementById("bmiHeight");
+  const weightVal = wEl ? parseInt(wEl.value, 10) : defaultWeight;
+  const heightVal = hEl ? parseInt(hEl.value, 10) : defaultHeight;
   const newPassword = document.getElementById("profilePassword").value;
 
   if (!name) {
