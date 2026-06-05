@@ -77,3 +77,28 @@ create or replace trigger on_auth_user_created
 
 -- Enable Realtime replication for the user_exercises table
 alter publication supabase_realtime add table public.user_exercises;
+
+-- Create gym_attendance table
+create table public.gym_attendance (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null default auth.uid(),
+  check_in_time timestamp with time zone default now() not null,
+  notes text,
+  created_at timestamp with time zone default now() not null
+);
+
+-- Enable RLS on gym_attendance
+alter table public.gym_attendance enable row level security;
+
+-- Gym Attendance RLS Policies
+create policy "Users can view their own gym attendance"
+  on public.gym_attendance for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own gym attendance"
+  on public.gym_attendance for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete their own gym attendance"
+  on public.gym_attendance for delete
+  using (auth.uid() = user_id);

@@ -220,6 +220,15 @@ function getProfileSidebar() {
           <svg class="sidebar-bmi-link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
 
+        <!-- Gym Attendance Link -->
+        <a href="attendance.html" class="sidebar-bmi-link" style="margin-top: 10px;">
+          <div class="sidebar-bmi-link__text">
+            <h4>Gym Attendance</h4>
+            <p>Record and view your monthly visits</p>
+          </div>
+          <svg class="sidebar-bmi-link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+
         <hr class="sidebar-divider">
 
         <!-- Profile Settings (Dropdown Details section) -->
@@ -1495,6 +1504,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const isHomePage = !!document.getElementById("workoutGrid");
   const list = document.getElementById("exerciseList");
   const isBmiPage = window.location.pathname.endsWith("/bmi.html") || window.location.pathname.endsWith("/bmi");
+  const isAttendancePage = window.location.pathname.endsWith("/attendance.html") || window.location.pathname.endsWith("/attendance");
 
   if (isHomePage) {
     // Render homepage grid as guest synchronously (0ms delay)
@@ -1572,6 +1582,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
 
+          if (isAttendancePage) {
+            await initAttendancePage();
+          }
+
           if (list) {
             // Asynchronously fetch latest custom exercises from Supabase
             await loadSupabaseExercises(session);
@@ -1605,8 +1619,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
           }
         } else {
-          // If guest tries to access workout details or BMI directly, redirect to login
-          if (list || isBmiPage) {
+          // If guest tries to access workout details, BMI, or Attendance directly, redirect to login
+          if (list || isBmiPage || isAttendancePage) {
             location.href = "auth.html";
           }
         }
@@ -1616,7 +1630,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Do not force redirect to auth.html immediately if there was a transient network error,
         // unless they are on detail page and have no local cache at all.
         const currentDay = new URLSearchParams(location.search).get("day") || "push-day";
-        if (isBmiPage) {
+        if (isBmiPage || isAttendancePage) {
           location.href = "auth.html";
         } else if (list && !localStorage.getItem(`fitflow:custom:${currentDay}`)) {
           location.href = "auth.html";
@@ -1624,3 +1638,265 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 });
+
+/* ── Gym Attendance Logic ───────────────────────────────────────────── */
+let attendanceYear = new Date().getFullYear();
+let attendanceMonth = new Date().getMonth();
+let attendanceLogs = [];
+
+async function initAttendancePage() {
+  const checkInBtn = document.getElementById("btnCheckInToday");
+  const prevMonthBtn = document.getElementById("btnPrevMonth");
+  const nextMonthBtn = document.getElementById("btnNextMonth");
+  const manualForm = document.getElementById("attendanceManualForm");
+
+  // Set default values for manual check-in form to today
+  const today = new Date();
+  const dateInput = document.getElementById("manualDate");
+  const timeInput = document.getElementById("manualTime");
+  if (dateInput) {
+    dateInput.value = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  }
+  if (timeInput) {
+    timeInput.value = String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
+  }
+
+  if (checkInBtn) {
+    checkInBtn.addEventListener("click", async () => {
+      try {
+        checkInBtn.disabled = true;
+        checkInBtn.textContent = "Logging Check-In...";
+        const now = new Date().toISOString();
+        await db.logGymAttendance(now);
+        showAttendanceMessage("Check-In logged successfully!", true);
+        await refreshAttendance();
+      } catch (e) {
+        console.error(e);
+        showAttendanceMessage(e.message || "Failed to log Check-In.", false);
+      } finally {
+        checkInBtn.disabled = false;
+        checkInBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Check In Today
+        `;
+      }
+    });
+  }
+
+  if (manualForm) {
+    manualForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const dateVal = document.getElementById("manualDate").value;
+      const timeVal = document.getElementById("manualTime").value;
+      if (!dateVal || !timeVal) return;
+
+      const submitBtn = manualForm.querySelector(".btn-checkin-submit");
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Logging...";
+        const dateTimeISO = new Date(`${dateVal}T${timeVal}`).toISOString();
+        await db.logGymAttendance(dateTimeISO);
+        showAttendanceMessage("Attendance logged manually!", true);
+        await refreshAttendance();
+      } catch (err) {
+        console.error(err);
+        showAttendanceMessage(err.message || "Failed to log attendance.", false);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Log Visit";
+      }
+    });
+  }
+
+  if (prevMonthBtn) {
+    prevMonthBtn.addEventListener("click", () => {
+      attendanceMonth--;
+      if (attendanceMonth < 0) {
+        attendanceMonth = 11;
+        attendanceYear--;
+      }
+      updateMonthDisplay();
+    });
+  }
+
+  if (nextMonthBtn) {
+    nextMonthBtn.addEventListener("click", () => {
+      attendanceMonth++;
+      if (attendanceMonth > 11) {
+        attendanceMonth = 0;
+        attendanceYear++;
+      }
+      updateMonthDisplay();
+    });
+  }
+
+  await refreshAttendance();
+}
+
+function showAttendanceMessage(msg, isSuccess) {
+  const el = document.getElementById("attendanceMessage");
+  if (!el) return;
+  el.textContent = msg;
+  el.className = isSuccess ? "auth-message alert-success" : "auth-message alert-error";
+  el.hidden = false;
+  setTimeout(() => { el.hidden = true; }, 3000);
+}
+
+async function refreshAttendance() {
+  if (typeof db !== "undefined") {
+    attendanceLogs = await db.getGymAttendance();
+    updateMonthDisplay();
+  }
+}
+
+function updateMonthDisplay() {
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const label = document.getElementById("calendarMonthLabel");
+  if (label) {
+    label.textContent = `${months[attendanceMonth]} ${attendanceYear}`;
+  }
+
+  renderStats();
+  renderCalendar();
+  renderHistory();
+}
+
+function renderStats() {
+  const monthlyLogs = attendanceLogs.filter(log => {
+    const d = new Date(log.check_in_time);
+    return d.getMonth() === attendanceMonth && d.getFullYear() === attendanceYear;
+  });
+
+  const countEl = document.getElementById("statMonthlyVisits");
+  if (countEl) countEl.textContent = monthlyLogs.length;
+
+  const streakEl = document.getElementById("statStreak");
+  if (streakEl) {
+    streakEl.textContent = calculateStreak(attendanceLogs);
+  }
+}
+
+function calculateStreak(logs) {
+  if (!logs || logs.length === 0) return 0;
+  
+  const uniqueDates = new Set();
+  logs.forEach(log => {
+    const d = new Date(log.check_in_time);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    uniqueDates.add(dateStr);
+  });
+  
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+  
+  let checkDate = null;
+  if (uniqueDates.has(todayStr)) {
+    checkDate = today;
+  } else if (uniqueDates.has(yesterdayStr)) {
+    checkDate = yesterday;
+  } else {
+    return 0;
+  }
+  
+  let streak = 0;
+  while (true) {
+    const curStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+    if (uniqueDates.has(curStr)) {
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderCalendar() {
+  const grid = document.getElementById("calendarGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  const startDay = (new Date(attendanceYear, attendanceMonth, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(attendanceYear, attendanceMonth + 1, 0).getDate();
+
+  const checkedDays = new Set(
+    attendanceLogs
+      .filter(log => {
+        const d = new Date(log.check_in_time);
+        return d.getMonth() === attendanceMonth && d.getFullYear() === attendanceYear;
+      })
+      .map(log => new Date(log.check_in_time).getDate())
+  );
+
+  const today = new Date();
+
+  for (let i = 0; i < startDay; i++) {
+    const cell = document.createElement("div");
+    cell.className = "calendar-day calendar-day-empty";
+    grid.appendChild(cell);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "calendar-day";
+    cell.textContent = day;
+
+    if (checkedDays.has(day)) {
+      cell.classList.add("calendar-day-checked");
+    }
+
+    if (day === today.getDate() && attendanceMonth === today.getMonth() && attendanceYear === today.getFullYear()) {
+      cell.classList.add("calendar-day-today");
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+function renderHistory() {
+  const listEl = document.getElementById("attendanceHistoryList");
+  if (!listEl) return;
+  listEl.innerHTML = "";
+
+  const monthlyLogs = attendanceLogs.filter(log => {
+    const d = new Date(log.check_in_time);
+    return d.getMonth() === attendanceMonth && d.getFullYear() === attendanceYear;
+  });
+
+  if (monthlyLogs.length === 0) {
+    listEl.innerHTML = `<p style="font-size:12.5px; color:var(--muted); text-align:center; font-style:italic; margin:16px 0;">No check-ins this month.</p>`;
+    return;
+  }
+
+  monthlyLogs.forEach(log => {
+    const date = new Date(log.check_in_time);
+    const dayStr = date.toLocaleDateString("en-US", { day: "numeric", month: "long" });
+    const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+    const item = document.createElement("div");
+    item.className = "history-item";
+    item.innerHTML = `
+      <div>
+        <div class="history-item-time">${timeStr}</div>
+        <div class="history-item-date">${dayStr}</div>
+      </div>
+      <button type="button" class="history-item-del" aria-label="Delete visit log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
+    `;
+
+    item.querySelector(".history-item-del").addEventListener("click", async () => {
+      if (confirm(`Delete visits record for ${dayStr} at ${timeStr}?`)) {
+        await db.deleteGymAttendance(log.id);
+        await refreshAttendance();
+      }
+    });
+
+    listEl.appendChild(item);
+  });
+}
+

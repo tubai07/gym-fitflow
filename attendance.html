@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>FitFlow - Gym Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="shell topbar__shell">
+      <button type="button" class="back" onclick="history.length > 1 ? history.back() : (location.href='index.html')" aria-label="Go back">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <a href="index.html" class="logo">Fit<span>Flow</span></a>
+      <div id="userProfile" class="user-profile-header"></div>
+    </div>
+  </header>
+  
+  <main class="main detail attendance-main">
+    <header class="detail-header">
+      <h1 class="page-title">Gym Attendance</h1>
+    </header>
+    
+    <div class="attendance-grid">
+      <!-- Log Visit Card -->
+      <div class="attendance-card">
+        <div class="attendance-section">
+          <h2>Log Your Visit</h2>
+          <p class="attendance-subtitle">Keep track of your gym consistency. Check in when you arrive, or log a past workout below.</p>
+          
+          <button type="button" id="btnCheckInToday" class="btn-checkin-large">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Check In Today
+          </button>
+          
+          <div class="attendance-divider">
+            <span>or log manually</span>
+          </div>
+          
+          <form id="attendanceManualForm" class="attendance-manual-form">
+            <div class="attendance-manual-fields">
+              <div class="attendance-field">
+                <label for="manualDate">Date</label>
+                <input type="date" id="manualDate" required class="diet-input">
+              </div>
+              <div class="attendance-field">
+                <label for="manualTime">Time</label>
+                <input type="time" id="manualTime" required class="diet-input">
+              </div>
+            </div>
+            <button type="submit" class="btn-checkin-submit">
+              Log Visit
+            </button>
+          </form>
+
+          <div id="attendanceMessage" class="auth-message" hidden></div>
+        </div>
+
+        <div class="attendance-stats-divider"></div>
+
+        <!-- Attendance Stats -->
+        <div class="attendance-stats">
+          <div class="stat-box">
+            <span class="stat-num" id="statMonthlyVisits">0</span>
+            <span class="stat-label">Visits this Month</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="statStreak">0</span>
+            <span class="stat-label">Consecutive Days</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Report Card -->
+      <div class="attendance-report-card">
+        <div class="calendar-header">
+          <button type="button" id="btnPrevMonth" class="btn-month-nav" aria-label="Previous Month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h3 id="calendarMonthLabel" class="calendar-month-label">June 2026</h3>
+          <button type="button" id="btnNextMonth" class="btn-month-nav" aria-label="Next Month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <div class="calendar-weeks">
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+          <span>Sun</span>
+        </div>
+
+        <div id="calendarGrid" class="calendar-grid"></div>
+
+        <hr class="sidebar-divider" style="margin: 20px 0 16px 0;">
+
+        <h3 class="history-title">Visit History</h3>
+        <div id="attendanceHistoryList" class="attendance-history-list"></div>
+      </div>
+    </div>
+
+    <footer class="footer">Built by <a href="https://www.instagram.com/tubai10x/" target="_blank" rel="noopener">tubai10x</a></footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js" defer></script>
+  <script src="supabase.js" defer></script>
+  <script src="icons.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

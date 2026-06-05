@@ -249,6 +249,84 @@ window.db = {
     return true;
   },
 
+  async getGymAttendance() {
+    if (!this.isConfigured()) {
+      const local = localStorage.getItem("fitflow:attendance");
+      return local ? JSON.parse(local) : [];
+    }
+    const session = await this.getSession();
+    if (!session) return [];
+
+    const { data, error } = await supabaseClient
+      .from("gym_attendance")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("check_in_time", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching gym attendance:", error);
+      return [];
+    }
+    return data;
+  },
+
+  async logGymAttendance(checkInTime, notes = "") {
+    if (!this.isConfigured()) {
+      const local = localStorage.getItem("fitflow:attendance");
+      const list = local ? JSON.parse(local) : [];
+      const newEntry = {
+        id: "local-" + Date.now(),
+        check_in_time: checkInTime,
+        notes: notes,
+        created_at: new Date().toISOString()
+      };
+      list.push(newEntry);
+      localStorage.setItem("fitflow:attendance", JSON.stringify(list));
+      return newEntry;
+    }
+    const session = await this.getSession();
+    if (!session) return null;
+
+    const { data, error } = await supabaseClient
+      .from("gym_attendance")
+      .insert({
+        user_id: session.user.id,
+        check_in_time: checkInTime,
+        notes: notes
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error inserting gym attendance:", error);
+      throw error;
+    }
+    return data;
+  },
+
+  async deleteGymAttendance(id) {
+    if (!this.isConfigured()) {
+      const local = localStorage.getItem("fitflow:attendance");
+      if (local) {
+        let list = JSON.parse(local);
+        list = list.filter(item => item.id !== id);
+        localStorage.setItem("fitflow:attendance", JSON.stringify(list));
+      }
+      return true;
+    }
+    
+    const { error } = await supabaseClient
+      .from("gym_attendance")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting gym attendance:", error);
+      return false;
+    }
+    return true;
+  },
+
   subscribeToUserExercises(workoutId, callback) {
     if (!this.isConfigured() || !supabaseClient) return () => {};
     
