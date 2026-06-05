@@ -2636,13 +2636,13 @@ body.modal-open {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.history-item-time {
+.history-item-date {
   font-weight: 600;
   color: var(--text);
 }
 
-.history-item-date {
-  font-size: 11px;
+.history-item-time {
+  font-size: 11.5px;
   color: var(--muted);
   margin-top: 2px;
 }
