@@ -905,9 +905,9 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
     check.className = "check";
     check.innerHTML = ICON.check;
     check.setAttribute("aria-label", `Mark ${ex.name} complete`);
-    check.addEventListener("click", async () => {
+    check.addEventListener("click", async (e) => {
+      e.stopPropagation();
       if (list.classList.contains("editing")) return;
-      if (isMeal) return;
       item.classList.toggle("done");
       const isDone = item.classList.contains("done");
       ex.is_done = isDone;
@@ -1082,17 +1082,17 @@ function openCardEditPopup(ex, isMeal, onSave) {
     <form class="diet-popup-form" id="cardEditForm" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; flex-direction: column; gap: 6px;">
         <label for="editExName" style="font-size: 13px; font-weight: 600; color: var(--text);">Card Name</label>
-        <input type="text" id="editExName" class="diet-input" value="${escapeHtml(ex.name)}" placeholder="e.g. Bench Press" required autocomplete="off" style="width: 100%;">
+        <input type="text" id="editExName" class="diet-input" value="${escapeHtml(ex.name)}" placeholder="e.g. Bench Press" required autocomplete="off" style="width: 100%; flex: none;">
       </div>
       
       ${!isMeal ? `
       <div style="display: flex; flex-direction: column; gap: 6px;">
         <label for="editExReps" style="font-size: 13px; font-weight: 600; color: var(--text);">Target (e.g. 10 reps | 3 sets)</label>
-        <input type="text" id="editExReps" class="diet-input" value="${escapeHtml(ex.sets !== undefined && ex.sets !== null && ex.sets !== '—' && ex.sets !== '' ? `${ex.reps} reps | ${ex.sets} sets` : (ex.reps || ''))}" placeholder="e.g. 10 reps | 3 sets" autocomplete="off" style="width: 100%;">
+        <input type="text" id="editExReps" class="diet-input" value="${escapeHtml(ex.sets !== undefined && ex.sets !== null && ex.sets !== '—' && ex.sets !== '' ? `${ex.reps} reps | ${ex.sets} sets` : (ex.reps || ''))}" placeholder="e.g. 10 reps | 3 sets" autocomplete="off" style="width: 100%; flex: none;">
       </div>
       <div style="display: flex; flex-direction: column; gap: 6px;">
         <label for="editExVideo" style="font-size: 13px; font-weight: 600; color: var(--text);">YouTube Video Link / ID</label>
-        <input type="text" id="editExVideo" class="diet-input" value="${escapeHtml(ex.video || '')}" placeholder="e.g. https://youtube.com/watch?v=..." autocomplete="off" style="width: 100%;">
+        <input type="text" id="editExVideo" class="diet-input" value="${escapeHtml(ex.video || '')}" placeholder="e.g. https://youtube.com/watch?v=..." autocomplete="off" style="width: 100%; flex: none;">
       </div>
       ` : ''}
       
