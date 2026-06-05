@@ -480,7 +480,7 @@ async function openProfileSidebar(user) {
         const phone = profile.phone || "";
         document.getElementById("profilePhone").value = phone.startsWith("+91") ? phone.slice(3) : phone;
         
-        const freshGender = profile.gender || user.user_metadata?.gender || "";
+        const freshGender = user.user_metadata?.gender || profile.gender || "";
         if (freshGender === "Male") {
           document.getElementById("profileGenderMale").checked = true;
         } else if (freshGender === "Female") {

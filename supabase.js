@@ -211,6 +211,18 @@ window.db = {
         .eq("id", session.user.id);
       if (dbError) {
         console.warn("Profiles database table update error (expected if gender column doesn't exist yet):", dbError);
+        // Fallback: if gender column doesn't exist, retry without it
+        if (dbError.code === "PGRST204" || (dbError.message && dbError.message.includes("gender"))) {
+          console.log("Retrying profile update without gender column...");
+          const dbUpdatesFallback = { name, phone, updated_at: new Date().toISOString() };
+          const { error: fallbackError } = await supabaseClient
+            .from("profiles")
+            .update(dbUpdatesFallback)
+            .eq("id", session.user.id);
+          if (fallbackError) {
+            console.error("Profiles database fallback update error:", fallbackError);
+          }
+        }
       }
     } catch (e) {
       console.warn("Failed updating profiles database table:", e);
