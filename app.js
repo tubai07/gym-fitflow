@@ -847,6 +847,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
   });
 
   list.appendChild(frag);
+}
 
 // ── Diet Meal Popup ─────────────────────────────────────────────────────────
 
