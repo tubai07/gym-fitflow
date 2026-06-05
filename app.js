@@ -1218,16 +1218,18 @@ function openDietMealPopup(ex, workoutId, exercises, isSupabaseLoaded, list, onC
       ? `<form class="diet-popup-form" id="dietAddForm">
            <div class="diet-popup-inputs">
              <input type="text" id="dietItemName" class="diet-input" placeholder="Food item (e.g. Oats, Roti)" required autocomplete="off">
-             <input type="text" id="dietItemQty" class="diet-input diet-input--small" placeholder="qty (e.g. 200 gm)" autocomplete="off">
+             <input type="text" id="dietItemQty" class="diet-input" placeholder="qty (e.g. 200 gm)" autocomplete="off">
            </div>
-           <button type="submit" class="diet-add-btn">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-             Add Item
-           </button>
-           <button type="button" class="diet-save-btn" id="dietSaveCloseBtn" style="margin-top: 4px;">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-             Save Changes
-           </button>
+           <div style="display: flex; gap: 8px; margin-top: 4px;">
+             <button type="submit" class="diet-add-btn" style="flex: 1;">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+               Add Item
+             </button>
+             <button type="button" class="diet-save-btn" id="dietSaveCloseBtn" style="flex: 1;">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+               Save Changes
+             </button>
+           </div>
          </form>`
       : ''
     }`;
