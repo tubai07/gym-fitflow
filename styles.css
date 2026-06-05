@@ -1662,10 +1662,11 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .diet-input {
-  flex: 1;
+  flex: none;
   height: 44px;
   padding: 0 12px;
   border: 1.5px solid var(--border);
@@ -1724,20 +1725,20 @@ body.modal-open {
   justify-content: center;
   gap: 6px;
   height: 46px;
-  border: 0;
+  border: 1.5px solid var(--purple);
   border-radius: 12px;
-  background: var(--text);
-  color: #fff;
+  background: #fff;
+  color: var(--purple);
   font-family: var(--font);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.18s ease, transform 0.14s ease;
+  transition: background-color 0.18s ease, transform 0.14s ease;
   letter-spacing: -0.01em;
 }
 
 .diet-save-btn:hover {
-  opacity: 0.9;
+  background: rgba(98, 80, 244, 0.05);
 }
 
 .diet-save-btn:active {
