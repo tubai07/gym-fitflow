@@ -683,12 +683,10 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
     if (isMeal) {
       const mealItems = getMealItems(ex, workoutId);
       if (mealItems.length > 0) {
-        // Show numbered list: "1. Oats 200 gm · 2. Roti 2 pcs"
+        // Show each item on its own line: "1. Banana 20 pc\n2. Apple 2 pc"
         displaySubtext = mealItems
-          .slice(0, 3) // max 3 in the preview
-          .map((it, i) => `${i + 1}. ${it.name}${it.qty ? " " + it.qty : ""}`)
-          .join(" · ");
-        if (mealItems.length > 3) displaySubtext += " …";
+          .map((it, i) => `${i + 1}. ${it.name}${(it.qty || it.cal) ? "  " + (it.qty || it.cal) : ""}`)
+          .join("\n");
       } else {
         displaySubtext = "Tap to add food items";
       }
