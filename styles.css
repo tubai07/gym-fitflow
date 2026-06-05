@@ -1347,6 +1347,15 @@ body.modal-open {
   transform: scale(0.98);
 }
 
+.exercise-meta--meal-preview {
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  color: #7c7c8a;
+}
+
 /* ── Diet Popup Overlay ──────────────────────────────────────────────── */
 .diet-popup-overlay {
   position: fixed;
@@ -1513,7 +1522,15 @@ body.modal-open {
   color: var(--text);
 }
 
-.diet-food-cal {
+.diet-food-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 20px;
+  flex-shrink: 0;
+}
+
+.diet-food-qty {
   font-size: 12px;
   font-weight: 600;
   color: var(--purple);
