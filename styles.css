@@ -1259,6 +1259,36 @@ body.modal-open {
   display: none;
 }
 
+.edit-btn {
+  display: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--purple);
+  background: transparent;
+  color: var(--purple);
+  padding: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 26px;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: var(--purple);
+  color: #fff;
+}
+
+.edit-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.exercise-list.editing .edit-btn {
+  display: inline-flex;
+}
+
 .exercise-list.editing .delete-btn {
   display: inline-flex;
 }
@@ -1387,6 +1417,7 @@ body.modal-open {
 .exercise--meal {
   cursor: pointer;
   border: 1px solid transparent;
+  padding: 22px 24px !important;
   transition: background 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
               transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
               box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
@@ -1407,7 +1438,7 @@ body.modal-open {
 }
 
 .exercise-meta--meal-preview {
-  font-size: 13px;
+  font-size: 15px !important;
   line-height: 1.6;
   white-space: pre-line;
   color: #7c7c8a;

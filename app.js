@@ -213,9 +213,6 @@ function getProfileSidebar() {
       <div class="profile-sidebar__content">
         <!-- BMI Calculator Link -->
         <a href="bmi.html" class="sidebar-bmi-link">
-          <div class="sidebar-bmi-link__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          </div>
           <div class="sidebar-bmi-link__text">
             <h4>BMI Calculator</h4>
             <p>Check and track your BMI index</p>
@@ -884,7 +881,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
           .map((it, i) => `${i + 1}. ${it.name}${(it.qty || it.cal) ? "  " + (it.qty || it.cal) : ""}`)
           .join("\n");
       } else {
-        displaySubtext = "Tap to add food items";
+        displaySubtext = "";
       }
     } else if (sets !== undefined && sets !== null && sets !== "—" && sets !== "") {
       displaySubtext = `${reps} reps | ${sets} sets`;
@@ -936,32 +933,17 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
       renderExercisesList(list, workoutId, exercises, isSupabaseLoaded);
     });
 
-    // Inline edit hooks (name always editable, meta only for non-meals)
-    name.addEventListener("click", (e) => {
-      if (!list.classList.contains("editing")) return;
+    // Edit button (visible only in Edit Mode)
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "edit-btn";
+    editBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+    editBtn.setAttribute("aria-label", `Edit ${ex.name}`);
+    editBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      makeFieldEditable(name, (newValue) => {
-        ex.name = newValue;
-        saveAllExercises(workoutId, exercises, isSupabaseLoaded);
-      });
-    });
-
-    meta.addEventListener("click", (e) => {
-      if (!list.classList.contains("editing") || isMeal) return;
-      e.stopPropagation();
-      makeFieldEditable(meta, (newValue) => {
-        const repsMatch = newValue.match(/(\d+)\s*reps/i);
-        const setsMatch = newValue.match(/(\d+)\s*sets/i);
-        if (repsMatch && setsMatch) {
-          ex.reps = repsMatch[1];
-          ex.sets = parseInt(setsMatch[1], 10);
-          meta.textContent = `${ex.reps} reps | ${ex.sets} sets`;
-        } else {
-          ex.reps = newValue;
-          ex.sets = null;
-          meta.textContent = newValue;
-        }
-        saveAllExercises(workoutId, exercises, isSupabaseLoaded);
+      openCardEditPopup(ex, isMeal, async () => {
+        await saveAllExercises(workoutId, exercises, isSupabaseLoaded);
+        renderExercisesList(list, workoutId, exercises, isSupabaseLoaded);
       });
     });
 
@@ -975,7 +957,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
         });
       });
 
-      item.append(dragHandle, info, deleteBtn);
+      item.append(dragHandle, info, editBtn, deleteBtn);
 
     // ── Exercise with video ────────────────────────────────────────────────
     } else if (videoId) {
@@ -1004,17 +986,15 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
       thumbBtn.append(img, play);
       thumbBtn.addEventListener("click", () => {
         if (list.classList.contains("editing")) {
-          const newUrl = prompt(`Enter YouTube Video URL (or 11-char video ID) for ${ex.name}:`, ex.video || "");
-          if (newUrl !== null) {
-            ex.video = newUrl.trim();
-            saveAllExercises(workoutId, exercises, isSupabaseLoaded);
+          openCardEditPopup(ex, isMeal, async () => {
+            await saveAllExercises(workoutId, exercises, isSupabaseLoaded);
             renderExercisesList(list, workoutId, exercises, isSupabaseLoaded);
-          }
+          });
           return;
         }
         openVideoModal(videoId, ex.name);
       });
-      item.append(dragHandle, thumbBtn, info, check, deleteBtn);
+      item.append(dragHandle, thumbBtn, info, check, editBtn, deleteBtn);
 
     // ── Exercise without video (no-video placeholder) ──────────────────────
     } else {
@@ -1024,14 +1004,12 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
       placeholder.setAttribute("aria-label", "Add video");
       placeholder.addEventListener("click", () => {
         if (!list.classList.contains("editing")) return;
-        const newUrl = prompt(`Enter YouTube Video URL (or 11-char video ID) for ${ex.name}:`, "");
-        if (newUrl !== null && newUrl.trim() !== "") {
-          ex.video = newUrl.trim();
-          saveAllExercises(workoutId, exercises, isSupabaseLoaded);
+        openCardEditPopup(ex, isMeal, async () => {
+          await saveAllExercises(workoutId, exercises, isSupabaseLoaded);
           renderExercisesList(list, workoutId, exercises, isSupabaseLoaded);
-        }
+        });
       });
-      item.append(dragHandle, placeholder, info, check, deleteBtn);
+      item.append(dragHandle, placeholder, info, check, editBtn, deleteBtn);
     }
 
     frag.appendChild(item);
@@ -1069,6 +1047,101 @@ function saveMealItems(ex, workoutId, items, exercises, isSupabaseLoaded) {
   // Mirror to local cache immediately for instant UI
   localStorage.setItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`, json);
   saveAllExercises(workoutId, exercises, isSupabaseLoaded);
+}
+
+function openCardEditPopup(ex, isMeal, onSave) {
+  const existing = document.getElementById("cardEditPopup");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "diet-popup-overlay";
+  overlay.id = "cardEditPopup";
+
+  const panel = document.createElement("div");
+  panel.className = "diet-popup-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-label", `Edit ${isMeal ? 'Meal' : 'Exercise'}`);
+
+  panel.innerHTML = `
+    <div class="diet-popup-header">
+      <div>
+        <h2 class="diet-popup-title">Edit ${isMeal ? 'Meal' : 'Exercise'}</h2>
+        <p class="diet-popup-subtitle">Modify the card details</p>
+      </div>
+      <button type="button" class="diet-popup-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form class="diet-popup-form" id="cardEditForm" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="editExName" style="font-size: 13px; font-weight: 600; color: var(--text);">Card Name</label>
+        <input type="text" id="editExName" class="diet-input" value="${escapeHtml(ex.name)}" placeholder="e.g. Bench Press" required autocomplete="off" style="width: 100%;">
+      </div>
+      
+      ${!isMeal ? `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="editExReps" style="font-size: 13px; font-weight: 600; color: var(--text);">Reps</label>
+          <input type="text" id="editExReps" class="diet-input" value="${escapeHtml(ex.reps !== undefined && ex.reps !== null ? ex.reps.toString() : '')}" placeholder="e.g. 10" autocomplete="off" style="width: 100%;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="editExSets" style="font-size: 13px; font-weight: 600; color: var(--text);">Sets</label>
+          <input type="number" id="editExSets" class="diet-input" value="${ex.sets !== undefined && ex.sets !== null ? ex.sets : ''}" placeholder="e.g. 3" autocomplete="off" style="width: 100%;">
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="editExVideo" style="font-size: 13px; font-weight: 600; color: var(--text);">YouTube Video Link / ID</label>
+        <input type="text" id="editExVideo" class="diet-input" value="${escapeHtml(ex.video || '')}" placeholder="e.g. https://youtube.com/watch?v=..." autocomplete="off" style="width: 100%;">
+      </div>
+      ` : ''}
+      
+      <button type="submit" class="profile-btn save-btn" style="margin-top: 10px; width: 100%; border: 0; display: block;">Save Changes</button>
+    </form>
+  `;
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    const inp = panel.querySelector("#editExName");
+    if (inp) inp.focus();
+  });
+
+  const close = () => {
+    overlay.classList.add("diet-popup-overlay--closing");
+    setTimeout(() => overlay.remove(), 200);
+    document.body.classList.remove("modal-open");
+  };
+
+  panel.querySelector(".diet-popup-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function escHandler(e) {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", escHandler); }
+  });
+
+  panel.querySelector("#cardEditForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const newName = panel.querySelector("#editExName").value.trim();
+    if (!newName) return;
+
+    ex.name = newName;
+    if (!isMeal) {
+      const newReps = panel.querySelector("#editExReps").value.trim();
+      const newSetsVal = panel.querySelector("#editExSets").value.trim();
+      const newVideo = panel.querySelector("#editExVideo").value.trim();
+
+      ex.reps = newReps || "10";
+      ex.sets = newSetsVal !== "" ? parseInt(newSetsVal, 10) : null;
+      ex.video = newVideo;
+    }
+
+    onSave();
+    close();
+  });
+
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(() => overlay.classList.add("diet-popup-overlay--open"));
 }
 
 function openDietMealPopup(ex, workoutId, exercises, isSupabaseLoaded, list, onClose) {
@@ -1299,10 +1372,22 @@ function initAddExerciseBtn() {
     const isSupabase = window.isSupabaseActive;
     const isDietPage = workoutId === "diet-chart";
 
+    let mealName = "New Meal";
+    if (isDietPage) {
+      const inputName = prompt("Enter meal name (e.g. Breakfast, Dinner):");
+      if (inputName === null) return; // user cancelled
+      const trimmed = inputName.trim();
+      if (!trimmed) {
+        alert("Meal name cannot be empty.");
+        return;
+      }
+      mealName = trimmed;
+    }
+
     const newEx = isDietPage
       ? {
           id: generateUUID(),
-          name: "New Meal",
+          name: mealName,
           video: "",
           reps: "—",
           sets: "—",
