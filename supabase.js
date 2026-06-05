@@ -1,5 +1,6 @@
 // Initialize Supabase Client
 let supabaseClient = null;
+let currentSession = null;
 
 if (
   window.supabase &&
@@ -11,8 +12,26 @@ if (
 ) {
   supabaseClient = window.supabase.createClient(
     window.ENV.SUPABASE_URL,
-    window.ENV.SUPABASE_ANON_KEY
+    window.ENV.SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: "fitflow-auth-token"
+      }
+    }
   );
+
+  // Prefetch and cache session
+  supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    currentSession = session;
+  }).catch(err => console.error("Error fetching session:", err));
+
+  // Sync session on auth state change
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    currentSession = session;
+  });
 } else {
   console.warn(
     "Supabase is not configured yet. Running in Local Mode. Please edit config.js with your project credentials."
@@ -25,13 +44,13 @@ window.db = {
     return supabaseClient !== null;
   },
 
-  async signUp(email, password, phone, name) {
+  async signUp(email, password, phone, name, gender) {
     if (!this.isConfigured()) throw new Error("Supabase is not configured.");
     const { data, error } = await supabaseClient.auth.signUp({
       email,
       password,
       options: {
-        data: { name, phone }
+        data: { name, phone, gender }
       }
     });
     if (error) throw error;
@@ -45,6 +64,7 @@ window.db = {
       password
     });
     if (error) throw error;
+    currentSession = data.session;
     return data;
   },
 
@@ -52,12 +72,19 @@ window.db = {
     if (!this.isConfigured()) return;
     const { error } = await supabaseClient.auth.signOut();
     if (error) throw error;
+    currentSession = null;
+  },
+
+  getCurrentSession() {
+    return currentSession;
   },
 
   async getSession() {
     if (!this.isConfigured()) return null;
+    if (currentSession) return currentSession;
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) return null;
+    currentSession = session;
     return session;
   },
 
@@ -65,6 +92,7 @@ window.db = {
     if (!this.isConfigured()) return () => {};
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, session) => {
+        currentSession = session;
         callback(event, session);
       }
     );
@@ -157,24 +185,46 @@ window.db = {
     return data;
   },
 
-  async updateUserProfile(name, phone) {
+  async updateUserProfile(name, phone, gender = null, height = null, weight = null) {
     if (!this.isConfigured()) return false;
     const session = await this.getSession();
     if (!session) return false;
 
+    const meta = { name, phone };
+    if (gender) meta.gender = gender;
+    if (height !== null) meta.height = height;
+    if (weight !== null) meta.weight = weight;
+
     // 1. Update Auth Metadata
     const { error: authError } = await supabaseClient.auth.updateUser({
-      data: { name, phone }
+      data: meta
     });
     if (authError) throw authError;
 
     // 2. Update profiles table
-    const { error: dbError } = await supabaseClient
-      .from("profiles")
-      .update({ name, phone, updated_at: new Date().toISOString() })
-      .eq("id", session.user.id);
-    if (dbError) throw dbError;
+    const dbUpdates = { name, phone, updated_at: new Date().toISOString() };
+    if (gender) dbUpdates.gender = gender;
+    try {
+      const { error: dbError } = await supabaseClient
+        .from("profiles")
+        .update(dbUpdates)
+        .eq("id", session.user.id);
+      if (dbError) {
+        console.warn("Profiles database table update error (expected if gender column doesn't exist yet):", dbError);
+      }
+    } catch (e) {
+      console.warn("Failed updating profiles database table:", e);
+    }
 
+    return true;
+  },
+
+  async updateUserMetadata(meta) {
+    if (!this.isConfigured()) return false;
+    const { error } = await supabaseClient.auth.updateUser({
+      data: meta
+    });
+    if (error) throw error;
     return true;
   },
 

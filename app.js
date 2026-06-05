@@ -165,42 +165,14 @@ function initUserProfile() {
             <span class="profile-avatar">${initial}</span>
             <span>${escapeHtml(name)}</span>
           </button>
-          <div class="profile-dropdown" id="profileDropdownMenu">
-            <button type="button" class="profile-dropdown-item" id="profileDetailsBtn">Profile Settings</button>
-            <button type="button" class="profile-dropdown-item" id="signOutBtn">Sign Out</button>
-          </div>
         </div>
       `;
 
-      // Toggle dropdown menu
+      // Trigger profile sidebar
       const trigger = document.getElementById("profileTriggerBtn");
-      const dropdown = document.getElementById("profileDropdownMenu");
-      if (trigger && dropdown) {
-        trigger.addEventListener("click", (e) => {
-          e.stopPropagation();
-          dropdown.classList.toggle("open");
-        });
-      }
-
-      // Profile settings click
-      const profileDetailsBtn = document.getElementById("profileDetailsBtn");
-      if (profileDetailsBtn) {
-        profileDetailsBtn.addEventListener("click", () => {
-          dropdown.classList.remove("open");
-          openProfileModal(session.user);
-        });
-      }
-
-      // Sign out
-      const signOutBtn = document.getElementById("signOutBtn");
-      if (signOutBtn) {
-        signOutBtn.addEventListener("click", async () => {
-          try {
-            await db.signOut();
-            location.reload();
-          } catch (err) {
-            console.error("Sign out failed", err);
-          }
+      if (trigger) {
+        trigger.addEventListener("click", () => {
+          openProfileSidebar(session.user);
         });
       }
     } else {
@@ -213,96 +185,296 @@ function initUserProfile() {
     const editToggleBtn = document.getElementById("editToggleBtn");
     if (editToggleBtn) editToggleBtn.style.display = "block";
   });
-
-  // Close dropdown on click outside
-  document.addEventListener("click", () => {
-    const dropdown = document.getElementById("profileDropdownMenu");
-    if (dropdown) dropdown.classList.remove("open");
-  });
 }
 
-function getProfileModal() {
-  let modal = document.getElementById("profileModal");
-  if (modal) return modal;
+function getProfileSidebar() {
+  let sidebar = document.getElementById("profileSidebar");
+  if (sidebar) return sidebar;
 
-  modal = document.createElement("div");
-  modal.id = "profileModal";
-  modal.className = "profile-modal video-modal";
-  modal.hidden = true;
-  modal.innerHTML = `
-    <div class="video-modal__backdrop" data-close></div>
-    <div class="video-modal__panel profile-modal-panel" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
-      <button type="button" class="video-modal__close" data-close aria-label="Close settings"></button>
-      <h2 id="profileModalTitle" class="profile-modal__title">Profile Settings</h2>
-      <form id="profileForm" class="profile-form">
-        <div class="form-group">
-          <label for="profileName">Full Name</label>
-          <input type="text" id="profileName" placeholder="Your Name" required autocomplete="name">
-        </div>
-        
-        <div class="form-group">
-          <label for="profileEmail">Email Address</label>
-          <input type="email" id="profileEmail" placeholder="you@example.com" readonly style="opacity: 0.6; cursor: not-allowed; background: rgba(0,0,0,0.05);">
-          <small style="color:var(--muted); font-size:12px; margin-top:4px; display:block;">Email address cannot be changed.</small>
-        </div>
+  sidebar = document.createElement("div");
+  sidebar.id = "profileSidebar";
+  sidebar.className = "profile-sidebar";
+  sidebar.hidden = true;
 
-        <div class="form-group">
-          <label for="profilePhone">Mobile Number</label>
-          <div class="phone-input-wrapper">
-            <span class="phone-prefix"><span class="flag-emoji">🇮🇳</span></span>
-            <input type="tel" id="profilePhone" placeholder="9876543210" required autocomplete="tel" pattern="[6-9]\\d{9}" title="Please enter a valid 10-digit mobile number.">
+  sidebar.innerHTML = `
+    <div class="profile-sidebar__backdrop" data-close></div>
+    <div class="profile-sidebar__panel" role="dialog" aria-modal="true" aria-labelledby="sidebarUserName">
+      <div class="profile-sidebar__header">
+        <div class="profile-sidebar__user">
+          <span class="profile-avatar profile-avatar--large" id="sidebarAvatar">U</span>
+          <div class="profile-sidebar__user-info">
+            <h3 id="sidebarUserName" class="sidebar-user-name">User Name</h3>
+            <p id="sidebarUserEmail" class="sidebar-user-email">user@example.com</p>
           </div>
         </div>
+        <button type="button" class="profile-sidebar__close" data-close aria-label="Close menu">&times;</button>
+      </div>
 
-        <div class="form-group">
-          <label for="profilePassword">New Password</label>
-          <input type="password" id="profilePassword" placeholder="Leave blank to keep current password" autocomplete="new-password">
-          <small style="color:var(--muted); font-size:12px; margin-top:4px; display:block;">Enter minimum 6 characters to update your password.</small>
-        </div>
+      <div class="profile-sidebar__content">
+        <!-- BMI Calculator Link -->
+        <a href="bmi.html" class="sidebar-bmi-link">
+          <div class="sidebar-bmi-link__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <div class="sidebar-bmi-link__text">
+            <h4>BMI Calculator</h4>
+            <p>Check and track your BMI index</p>
+          </div>
+          <svg class="sidebar-bmi-link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
 
-        <div id="profileMessage" class="auth-message" hidden></div>
+        <hr class="sidebar-divider">
 
-        <div class="profile-actions">
-          <button type="submit" class="profile-btn save-btn">Save Changes</button>
-          <button type="button" class="profile-btn cancel-btn" data-close>Cancel</button>
-        </div>
-      </form>
+        <!-- Profile Settings (Dropdown Details section) -->
+        <details class="sidebar-section" id="sidebarProfileDetails">
+          <summary class="sidebar-section-title">
+            <span>Profile Settings</span>
+            <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </summary>
+          <form id="profileForm" class="profile-form">
+            <div class="form-group">
+              <label for="profileName">Full Name</label>
+              <input type="text" id="profileName" placeholder="Your Name" required autocomplete="name">
+            </div>
+            
+            <div class="form-group">
+              <label for="profileEmail">Email Address</label>
+              <input type="email" id="profileEmail" placeholder="you@example.com" readonly style="opacity: 0.6; cursor: not-allowed; background: rgba(0,0,0,0.05);">
+              <small style="color:var(--muted); font-size:11px; margin-top:2px; display:block;">Email address cannot be changed.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="profilePhone">Mobile Number</label>
+              <div class="phone-input-wrapper">
+                <span class="phone-prefix"><span class="flag-emoji">🇮🇳</span></span>
+                <input type="tel" id="profilePhone" placeholder="9876543210" required autocomplete="tel" pattern="[6-9]\\d{9}" title="Please enter a valid 10-digit mobile number.">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Gender</label>
+              <div class="gender-selection">
+                <label class="gender-option">
+                  <input type="radio" name="profileGender" value="Male" id="profileGenderMale">
+                  <span>Male</span>
+                </label>
+                <label class="gender-option">
+                  <input type="radio" name="profileGender" value="Female" id="profileGenderFemale">
+                  <span>Female</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="profilePassword">New Password</label>
+              <input type="password" id="profilePassword" placeholder="Leave blank to keep current" autocomplete="new-password">
+              <small style="color:var(--muted); font-size:11px; margin-top:2px; display:block;">Minimum 6 characters to update password.</small>
+            </div>
+
+            <div id="profileMessage" class="auth-message" hidden></div>
+
+            <button type="submit" class="profile-btn save-btn">Save Changes</button>
+          </form>
+        </details>
+      </div>
+
+      <div class="profile-sidebar__footer">
+        <button type="button" class="sidebar-signout-btn" id="sidebarSignOutBtn">Sign Out</button>
+      </div>
     </div>`;
-  document.body.appendChild(modal);
 
-  modal.addEventListener("click", (e) => {
-    if (e.target.closest("[data-close]")) closeProfileModal();
+  document.body.appendChild(sidebar);
+
+  sidebar.addEventListener("click", (e) => {
+    if (e.target.closest("[data-close]")) closeProfileSidebar();
   });
   
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !modal.hidden) closeProfileModal();
+    if (e.key === "Escape" && !sidebar.hidden) closeProfileSidebar();
   });
 
-  const form = document.getElementById("profileForm");
+  const form = sidebar.querySelector("#profileForm");
   form.addEventListener("submit", handleProfileUpdate);
 
-  return modal;
+  const signOutBtn = sidebar.querySelector("#sidebarSignOutBtn");
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", async () => {
+      try {
+        await db.signOut();
+        location.reload();
+      } catch (err) {
+        console.error("Sign out failed", err);
+      }
+    });
+  }
+
+  return sidebar;
 }
 
-async function openProfileModal(user) {
-  const modal = getProfileModal();
+function formatInchesToFeetInches(totalInches) {
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return `${feet} ft ${inches} in`;
+}
+
+function calculateBMI() {
+  const container = document.getElementById("profileSidebar") || document.querySelector(".bmi-main");
+  if (!container) return;
+
+  const wInput = container.querySelector("#bmiWeight");
+  const hInput = container.querySelector("#bmiHeight");
+  if (!wInput || !hInput) return;
+
+  const w = parseFloat(wInput.value);
+  const hInches = parseFloat(hInput.value);
+  const h = (hInches * 2.54) / 100; // convert inches to meters
+
+  if (!w || !h) return;
+
+  const bmi = w / (h * h);
+  const scoreEl = container.querySelector("#bmiScore");
+  const statusEl = container.querySelector("#bmiStatus");
+  const indicatorEl = container.querySelector("#bmiGaugeIndicator");
+
+  if (scoreEl) scoreEl.textContent = bmi.toFixed(1);
+
+  let status = "Normal Weight";
+  let statusClass = "normal";
+  
+  if (bmi < 18.5) {
+    status = "Underweight";
+    statusClass = "underweight";
+  } else if (bmi >= 18.5 && bmi < 25) {
+    status = "Normal Weight";
+    statusClass = "normal";
+  } else if (bmi >= 25 && bmi < 30) {
+    status = "Overweight";
+    statusClass = "overweight";
+  } else {
+    status = "Obese";
+    statusClass = "obese";
+  }
+
+  if (statusEl) {
+    statusEl.className = `bmi-status ${statusClass}`;
+    statusEl.textContent = status;
+  }
+
+  if (indicatorEl) {
+    const minBmi = 15;
+    const maxBmi = 35;
+    const pct = Math.min(100, Math.max(0, ((bmi - minBmi) / (maxBmi - minBmi)) * 100));
+    indicatorEl.style.left = `${pct}%`;
+  }
+
+  // Calculate weight gain/loss advice
+  const feedbackCard = container.querySelector("#bmiFeedbackCard");
+  const feedbackText = container.querySelector("#bmiFeedbackText");
+
+  if (feedbackCard && feedbackText) {
+    const minWeight = 18.5 * (h * h);
+    const maxWeight = 24.9 * (h * h);
+
+    if (bmi < 18.5) {
+      const diff = minWeight - w;
+      feedbackText.innerHTML = `You need to gain <strong>${diff.toFixed(1)} kg</strong> to reach a healthy BMI of 18.5.`;
+      feedbackCard.className = "bmi-feedback-card gain";
+      feedbackCard.hidden = false;
+    } else if (bmi >= 25) {
+      const diff = w - maxWeight;
+      feedbackText.innerHTML = `You need to lose <strong>${diff.toFixed(1)} kg</strong> to reach a healthy BMI of 24.9.`;
+      feedbackCard.className = "bmi-feedback-card lose";
+      feedbackCard.hidden = false;
+    } else {
+      feedbackText.innerHTML = `Great job! You are in the healthy range (Normal weight: <strong>${minWeight.toFixed(1)} - ${maxWeight.toFixed(1)} kg</strong>).`;
+      feedbackCard.className = "bmi-feedback-card healthy";
+      feedbackCard.hidden = false;
+    }
+  }
+}
+
+let bmiSaveTimeout = null;
+async function saveBMIData() {
+  const container = document.getElementById("profileSidebar") || document.querySelector(".bmi-main");
+  if (!container || !db.isConfigured()) return;
+
+  const wInput = container.querySelector("#bmiWeight");
+  const hInput = container.querySelector("#bmiHeight");
+  if (!wInput || !hInput) return;
+
+  const w = parseInt(wInput.value, 10);
+  const hInches = parseInt(hInput.value, 10);
+  const hCm = Math.round(hInches * 2.54);
+
+  clearTimeout(bmiSaveTimeout);
+  bmiSaveTimeout = setTimeout(async () => {
+    try {
+      console.log(`Saving height (${hCm}cm) and weight (${w}kg) to Supabase...`);
+      const session = db.getCurrentSession();
+      if (!session) return;
+      
+      const name = session.user.user_metadata?.name || "";
+      const phone = session.user.user_metadata?.phone || "";
+      const gender = session.user.user_metadata?.gender || "";
+      
+      await db.updateUserProfile(name, phone, gender, hCm, w);
+      
+      if (session.user) {
+        if (!session.user.user_metadata) session.user.user_metadata = {};
+        session.user.user_metadata.height = hCm;
+        session.user.user_metadata.weight = w;
+      }
+    } catch (e) {
+      console.error("Failed to save BMI sliders to Supabase:", e);
+    }
+  }, 1000);
+}
+
+async function openProfileSidebar(user) {
+  const sidebar = getProfileSidebar();
   
   const email = user.email || "";
   let name = user.user_metadata?.name || "";
   let phoneFull = user.user_metadata?.phone || user.phone || "";
+  let gender = user.user_metadata?.gender || "";
+  let height = user.user_metadata?.height || 170;
+  let weight = user.user_metadata?.weight || 70;
+
+  sidebar.querySelector("#sidebarUserName").textContent = name || "User";
+  sidebar.querySelector("#sidebarUserEmail").textContent = email;
+  sidebar.querySelector("#sidebarAvatar").textContent = (name || email || "U").charAt(0).toUpperCase();
 
   document.getElementById("profileName").value = name;
   document.getElementById("profileEmail").value = email;
   document.getElementById("profilePhone").value = phoneFull.startsWith("+91") ? phoneFull.slice(3) : phoneFull;
   document.getElementById("profilePassword").value = "";
   
+  if (gender === "Male") {
+    document.getElementById("profileGenderMale").checked = true;
+  } else if (gender === "Female") {
+    document.getElementById("profileGenderFemale").checked = true;
+  } else {
+    document.getElementById("profileGenderMale").checked = false;
+    document.getElementById("profileGenderFemale").checked = false;
+  }
+
+  const wInput = sidebar.querySelector("#bmiWeight");
+  const hInput = sidebar.querySelector("#bmiHeight");
+  if (wInput && hInput) {
+    wInput.value = weight;
+    sidebar.querySelector("#weightVal").textContent = weight;
+    hInput.value = height;
+    sidebar.querySelector("#heightVal").textContent = height;
+    calculateBMI();
+  }
+  
   const messageEl = document.getElementById("profileMessage");
   if (messageEl) messageEl.hidden = true;
 
-  modal.hidden = false;
+  sidebar.hidden = false;
   document.body.classList.add("modal-open");
+  requestAnimationFrame(() => sidebar.classList.add("profile-sidebar--open"));
 
-  // Fetch fresher data from profiles table if configured
   if (typeof db !== "undefined" && db.isConfigured()) {
     try {
       const profile = await db.getProfile();
@@ -310,6 +482,13 @@ async function openProfileModal(user) {
         document.getElementById("profileName").value = profile.name || "";
         const phone = profile.phone || "";
         document.getElementById("profilePhone").value = phone.startsWith("+91") ? phone.slice(3) : phone;
+        
+        const freshGender = profile.gender || user.user_metadata?.gender || "";
+        if (freshGender === "Male") {
+          document.getElementById("profileGenderMale").checked = true;
+        } else if (freshGender === "Female") {
+          document.getElementById("profileGenderFemale").checked = true;
+        }
       }
     } catch (e) {
       console.error("Error loading fresh profile data:", e);
@@ -317,11 +496,14 @@ async function openProfileModal(user) {
   }
 }
 
-function closeProfileModal() {
-  const modal = document.getElementById("profileModal");
-  if (modal) {
-    modal.hidden = true;
-    document.body.classList.remove("modal-open");
+function closeProfileSidebar() {
+  const sidebar = document.getElementById("profileSidebar");
+  if (sidebar) {
+    sidebar.classList.remove("profile-sidebar--open");
+    setTimeout(() => {
+      sidebar.hidden = true;
+      document.body.classList.remove("modal-open");
+    }, 250);
   }
 }
 
@@ -334,6 +516,11 @@ async function handleProfileUpdate(e) {
   const saveBtn = e.target.querySelector(".save-btn");
   const name = document.getElementById("profileName").value.trim();
   const rawPhone = document.getElementById("profilePhone").value.trim();
+  const genderEl = e.target.querySelector("input[name='profileGender']:checked");
+  const gender = genderEl ? genderEl.value : null;
+
+  const weightVal = parseInt(document.getElementById("bmiWeight").value, 10);
+  const heightVal = parseInt(document.getElementById("bmiHeight").value, 10);
   const newPassword = document.getElementById("profilePassword").value;
 
   if (!name) {
@@ -343,7 +530,7 @@ async function handleProfileUpdate(e) {
     return;
   }
 
-  if (!/^[6-9]\d{9}$/.test(rawPhone)) {
+  if (rawPhone && !/^[6-9]\d{9}$/.test(rawPhone)) {
     messageEl.textContent = "Please enter a valid 10-digit mobile number.";
     messageEl.className = "auth-message alert-error";
     messageEl.hidden = false;
@@ -361,14 +548,22 @@ async function handleProfileUpdate(e) {
   saveBtn.textContent = "Saving...";
 
   try {
-    const formattedPhone = "+91" + rawPhone;
+    const formattedPhone = rawPhone ? "+91" + rawPhone : "";
     
-    // 1. Update Profile Info
-    await db.updateUserProfile(name, formattedPhone);
+    await db.updateUserProfile(name, formattedPhone, gender, heightVal, weightVal);
 
-    // 2. Update Password if specified
     if (newPassword) {
       await db.updateUserPassword(newPassword);
+    }
+
+    const session = db.getCurrentSession();
+    if (session && session.user) {
+      if (!session.user.user_metadata) session.user.user_metadata = {};
+      session.user.user_metadata.name = name;
+      session.user.user_metadata.phone = formattedPhone;
+      session.user.user_metadata.gender = gender;
+      session.user.user_metadata.height = heightVal;
+      session.user.user_metadata.weight = weightVal;
     }
 
     messageEl.textContent = "Profile updated successfully!";
@@ -377,7 +572,7 @@ async function handleProfileUpdate(e) {
     document.getElementById("profilePassword").value = "";
 
     setTimeout(() => {
-      closeProfileModal();
+      closeProfileSidebar();
       location.reload();
     }, 1500);
 
@@ -457,6 +652,7 @@ async function saveAllExercises(workoutId, exercises, isSupabaseLoaded) {
   const isSupabase = isSupabaseLoaded || window.isSupabaseActive;
   if (isSupabase && typeof db !== "undefined" && db.isConfigured()) {
     try {
+      window.lastSavedTime = Date.now();
       await db.saveUserExercises(workoutId, exercises);
     } catch (err) {
       console.error("Error saving exercises to Supabase:", err);
@@ -1039,22 +1235,19 @@ async function loadSupabaseExercises(session) {
     const dbExercises = await db.getUserExercises(workout.id);
     let exercises = [];
     
-    if (dbExercises && dbExercises.length > 0) {
-      exercises = dbExercises;
-      // Synchronize the local storage with fresh DB values
-      localStorage.setItem(`fitflow:custom:${workout.id}`, JSON.stringify(exercises));
-      window.activeExercises = exercises;
-      window.isSupabaseActive = true;
-      renderExercisesList(list, workout.id, exercises, true);
-    } else if (dbExercises !== null) {
-      // Database query was successful but empty -> initialize database
-      const defaultExercises = getDefaultExercisesArray(workout);
-      await db.saveUserExercises(workout.id, defaultExercises);
-      const reFetched = await db.getUserExercises(workout.id);
-      if (reFetched && reFetched.length > 0) {
-        exercises = reFetched;
+    if (dbExercises !== null) {
+      const isInitialized = session.user.user_metadata?.is_initialized;
+      if (dbExercises.length > 0) {
+        exercises = dbExercises;
+      } else if (!isInitialized) {
+        // Not initialized yet: database is successfully queried but empty -> initialize database
+        const defaultExercises = getDefaultExercisesArray(workout);
+        await db.saveUserExercises(workout.id, defaultExercises);
+        const reFetched = await db.getUserExercises(workout.id);
+        exercises = (reFetched && reFetched.length > 0) ? reFetched : defaultExercises;
       } else {
-        exercises = defaultExercises;
+        // Initialized but empty: user deliberately deleted all exercises
+        exercises = [];
       }
       localStorage.setItem(`fitflow:custom:${workout.id}`, JSON.stringify(exercises));
       window.activeExercises = exercises;
@@ -1068,6 +1261,36 @@ async function loadSupabaseExercises(session) {
     }
   } catch (err) {
     console.error("Error loading exercises from Supabase:", err);
+  }
+}
+
+async function initializeAllUserWorkouts(user) {
+  console.log("Checking and initializing user default plans...");
+  for (const workout of WORKOUTS) {
+    try {
+      const dbExercises = await db.getUserExercises(workout.id);
+      if (dbExercises === null || dbExercises.length === 0) {
+        console.log(`Initializing default exercises for workout: ${workout.id}`);
+        const defaultExercises = getDefaultExercisesArray(workout);
+        await db.saveUserExercises(workout.id, defaultExercises);
+      }
+    } catch (e) {
+      console.error(`Failed to initialize workout ${workout.id}:`, e);
+    }
+  }
+  
+  // Set is_initialized = true in metadata
+  try {
+    await db.updateUserMetadata({ is_initialized: true });
+    // Also sync local session
+    const session = db.getCurrentSession();
+    if (session && session.user) {
+      if (!session.user.user_metadata) session.user.user_metadata = {};
+      session.user.user_metadata.is_initialized = true;
+    }
+    console.log("All workouts successfully initialized.");
+  } catch (e) {
+    console.error("Failed to update user_metadata:", e);
   }
 }
 
@@ -1128,6 +1351,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const isHomePage = !!document.getElementById("workoutGrid");
   const list = document.getElementById("exerciseList");
+  const isBmiPage = window.location.pathname.endsWith("/bmi.html") || window.location.pathname.endsWith("/bmi");
 
   if (isHomePage) {
     // Render homepage grid as guest synchronously (0ms delay)
@@ -1154,15 +1378,57 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (isBmiPage) {
+    const weightInput = document.getElementById("bmiWeight");
+    const heightInput = document.getElementById("bmiHeight");
+    if (weightInput && heightInput) {
+      weightInput.addEventListener("input", (e) => {
+        document.getElementById("weightVal").textContent = e.target.value;
+        calculateBMI();
+      });
+      heightInput.addEventListener("input", (e) => {
+        document.getElementById("heightVal").textContent = formatInchesToFeetInches(e.target.value);
+        calculateBMI();
+      });
+      weightInput.addEventListener("change", saveBMIData);
+      heightInput.addEventListener("change", saveBMIData);
+
+      // Compute initial BMI immediately on load (offline/local mode)
+      calculateBMI();
+    }
+  }
+
   // Async authentication and database sync in the background
   if (typeof db !== "undefined" && db.isConfigured()) {
     db.getSession()
       .then(async (session) => {
         if (session) {
+          // Initialize all workouts if not done yet
+          if (!session.user.user_metadata?.is_initialized) {
+            await initializeAllUserWorkouts(session.user);
+          }
+
           if (isHomePage) {
             // Update links to point to workouts for authenticated user
             renderHomeGrid(session);
           }
+
+          if (isBmiPage) {
+            const heightCm = session.user.user_metadata?.height || 170;
+            const weight = session.user.user_metadata?.weight || 70;
+            const heightInches = Math.round(heightCm / 2.54);
+
+            const wInput = document.getElementById("bmiWeight");
+            const hInput = document.getElementById("bmiHeight");
+            if (wInput && hInput) {
+              wInput.value = weight;
+              document.getElementById("weightVal").textContent = weight;
+              hInput.value = heightInches;
+              document.getElementById("heightVal").textContent = formatInchesToFeetInches(heightInches);
+              calculateBMI();
+            }
+          }
+
           if (list) {
             // Asynchronously fetch latest custom exercises from Supabase
             await loadSupabaseExercises(session);
@@ -1182,6 +1448,11 @@ document.addEventListener("DOMContentLoaded", () => {
               const isEditing = !!list.querySelector(".inline-edit-input");
               const isDragging = !!list.querySelector(".dragging");
               
+              if (Date.now() - (window.lastSavedTime || 0) < 2000) {
+                console.log("Realtime sync: ignored self-update.");
+                return;
+              }
+
               if (!isEditing && !isDragging) {
                 console.log("Realtime sync: exercises updated on Supabase, refreshing UI...", payload);
                 await loadSupabaseExercises(session);
@@ -1191,15 +1462,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
           }
         } else {
-          // If guest tries to access workout details directly, redirect to login
-          if (list) {
+          // If guest tries to access workout details or BMI directly, redirect to login
+          if (list || isBmiPage) {
             location.href = "auth.html";
           }
         }
       })
       .catch((err) => {
         console.error("Auth check failed:", err);
-        if (list) {
+        // Do not force redirect to auth.html immediately if there was a transient network error,
+        // unless they are on detail page and have no local cache at all.
+        const currentDay = new URLSearchParams(location.search).get("day") || "push-day";
+        if (isBmiPage) {
+          location.href = "auth.html";
+        } else if (list && !localStorage.getItem(`fitflow:custom:${currentDay}`)) {
           location.href = "auth.html";
         }
       });

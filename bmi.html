@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>FitFlow - BMI Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="shell topbar__shell">
+      <button type="button" class="back" onclick="history.length > 1 ? history.back() : (location.href='index.html')" aria-label="Go back">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <a href="index.html" class="logo">Fit<span>Flow</span></a>
+      <div id="userProfile" class="user-profile-header"></div>
+    </div>
+  </header>
+  
+  <main class="main detail bmi-main">
+    <header class="detail-header">
+      <h1 class="page-title">BMI Calculator</h1>
+    </header>
+    
+    <div class="bmi-card">
+      <div class="bmi-calculator">
+        <p class="bmi-subtitle">Calculate and track your Body Mass Index interactively using range sliders.</p>
+        
+        <div class="bmi-field">
+          <div class="bmi-label-row">
+            <label for="bmiWeight">Weight</label>
+            <span class="bmi-value"><span id="weightVal">70</span> kg</span>
+          </div>
+          <div class="bmi-slider-wrap">
+            <input type="range" id="bmiWeight" min="30" max="180" value="70" class="bmi-slider">
+          </div>
+        </div>
+
+        <div class="bmi-field">
+          <div class="bmi-label-row">
+            <label for="bmiHeight">Height</label>
+            <span class="bmi-value" id="heightVal">5 ft 7 in</span>
+          </div>
+          <div class="bmi-slider-wrap">
+            <input type="range" id="bmiHeight" min="36" max="90" value="67" class="bmi-slider">
+          </div>
+        </div>
+
+        <div class="bmi-result-card">
+          <div class="bmi-score-wrap">
+            <span class="bmi-score-label">Your BMI</span>
+            <span id="bmiScore">24.2</span>
+          </div>
+          <div class="bmi-status-wrap">
+            <span id="bmiStatus" class="bmi-status normal">Normal Weight</span>
+          </div>
+        </div>
+
+        <div class="bmi-feedback-card" id="bmiFeedbackCard" hidden>
+          <p id="bmiFeedbackText"></p>
+        </div>
+
+        <div class="bmi-gauge">
+          <div class="bmi-gauge-track"></div>
+          <div id="bmiGaugeIndicator" class="bmi-gauge-indicator"></div>
+        </div>
+        
+        <div class="bmi-ranges">
+          <span>&lt;18.5<br>Under</span>
+          <span>18.5-24.9<br>Normal</span>
+          <span>25-29.9<br>Over</span>
+          <span>&ge;30<br>Obese</span>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">Built by <a href="https://www.instagram.com/tubai10x/" target="_blank" rel="noopener">tubai10x</a></footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js" defer></script>
+  <script src="supabase.js" defer></script>
+  <script src="icons.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

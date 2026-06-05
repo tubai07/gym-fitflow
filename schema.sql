@@ -5,6 +5,7 @@ create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   name text not null,
   phone text,
+  gender text,
   updated_at timestamp with time zone default now()
 );
 
@@ -58,11 +59,12 @@ create policy "Users can delete their own exercises"
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, name, phone, updated_at)
+  insert into public.profiles (id, name, phone, gender, updated_at)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', 'User'),
     coalesce(new.raw_user_meta_data->>'phone', ''),
+    coalesce(new.raw_user_meta_data->>'gender', ''),
     now()
   );
   return new;

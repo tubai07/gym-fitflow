@@ -71,6 +71,20 @@
               <input type="tel" id="signupPhone" placeholder="9876543210" required autocomplete="tel" pattern="[6-9]\d{9}" title="Please enter a valid 10-digit mobile number.">
             </div>
           </div>
+
+          <div class="form-group">
+            <label>Gender</label>
+            <div class="gender-selection">
+              <label class="gender-option">
+                <input type="radio" name="signupGender" value="Male" required>
+                <span>Male</span>
+              </label>
+              <label class="gender-option">
+                <input type="radio" name="signupGender" value="Female" required>
+                <span>Female</span>
+              </label>
+            </div>
+          </div>
           
           <div class="form-group">
             <label for="signupPassword">Password</label>
@@ -170,13 +184,15 @@
         }
 
         const phone = "+91" + rawPhone;
+        const genderEl = signupForm.querySelector("input[name='signupGender']:checked");
+        const gender = genderEl ? genderEl.value : "";
         const password = document.getElementById("signupPassword").value;
         const btn = signupForm.querySelector("button[type='submit']");
         btn.disabled = true;
         btn.textContent = "Creating account...";
 
         try {
-          await window.db.signUp(email, password, phone, name);
+          await window.db.signUp(email, password, phone, name, gender);
           signupMessage.textContent = "Registration successful! You can now log in.";
           signupMessage.className = "auth-message alert-success";
           signupMessage.hidden = false;
