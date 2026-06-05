@@ -2375,6 +2375,65 @@ body.modal-open {
   letter-spacing: 0.05em;
 }
 
+/* Custom Wrapped Inputs for Date and Time */
+.attendance-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.attendance-input-wrapper .diet-input {
+  width: 100%;
+  padding-right: 40px; /* Space for the icon */
+  box-sizing: border-box;
+  position: relative;
+  cursor: pointer;
+  background: #fafafa;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--text);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.attendance-input-wrapper .diet-input:hover {
+  background: #f3f3f6;
+  border-color: rgba(98, 80, 244, 0.4);
+}
+
+.attendance-input-wrapper .diet-input:focus {
+  background: #fff;
+  border-color: var(--purple);
+}
+
+.attendance-input-icon {
+  position: absolute;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  color: #b8b8c4;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.attendance-input-wrapper:focus-within .attendance-input-icon {
+  color: var(--purple);
+}
+
+/* Hide native browser calendar/clock popups icon and make whole field clickable */
+.attendance-custom-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
 .btn-checkin-submit {
   height: 44px;
   border: 1.5px solid var(--purple);
@@ -2484,7 +2543,7 @@ body.modal-open {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 8px; /* Slightly larger gap for airiness */
 }
 
 .calendar-day {
@@ -2498,11 +2557,13 @@ body.modal-open {
   border-radius: 50%;
   position: relative;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .calendar-day:hover:not(.calendar-day-empty) {
-  background: #f3f3f6;
+  background: rgba(98, 80, 244, 0.08);
+  color: var(--purple);
+  transform: scale(1.08);
 }
 
 .calendar-day-empty {
@@ -2510,23 +2571,33 @@ body.modal-open {
 }
 
 .calendar-day-today {
-  border: 1.5px solid var(--purple);
+  border: 2px solid var(--purple);
+  background: rgba(98, 80, 244, 0.04);
+  color: var(--purple);
+  font-weight: 800;
 }
 
 .calendar-day-checked {
-  background: var(--purple) !important;
+  background: linear-gradient(135deg, var(--purple), #8a7cfb) !important;
   color: #fff !important;
   font-weight: 700;
-  box-shadow: 0 4px 10px rgba(98, 80, 244, 0.3);
+  box-shadow: 0 6px 14px rgba(98, 80, 244, 0.35);
+}
+
+.calendar-day-checked:hover:not(.calendar-day-empty) {
+  background: linear-gradient(135deg, var(--purple), #8a7cfb) !important;
+  color: #fff !important;
+  transform: scale(1.08) translateY(-1px);
+  box-shadow: 0 8px 18px rgba(98, 80, 244, 0.45);
 }
 
 .calendar-day-checked::after {
   content: '';
   position: absolute;
-  bottom: 4px;
+  bottom: 5px;
   width: 4px;
   height: 4px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 50%;
 }
 

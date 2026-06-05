@@ -257,20 +257,34 @@ window.db = {
     const session = await this.getSession();
     if (!session) return [];
 
-    const { data, error } = await supabaseClient
-      .from("gym_attendance")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .order("check_in_time", { ascending: false });
+    try {
+      const { data, error } = await supabaseClient
+        .from("gym_attendance")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("check_in_time", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching gym attendance:", error);
-      return [];
+      if (error) {
+        console.error("Error fetching gym attendance from Supabase:", error);
+        // Fallback to localStorage if schema cache error, table missing, or RLS error
+        if (error.code === "PGRST204" || error.message?.includes("gym_attendance") || error.message?.includes("schema cache")) {
+          console.warn("Table 'gym_attendance' not found. Falling back to localStorage.");
+          const local = localStorage.getItem("fitflow:attendance");
+          return local ? JSON.parse(local) : [];
+        }
+        return [];
+      }
+      return data;
+    } catch (err) {
+      console.error("Catch error fetching gym attendance:", err);
+      const local = localStorage.getItem("fitflow:attendance");
+      return local ? JSON.parse(local) : [];
     }
-    return data;
   },
 
   async logGymAttendance(checkInTime, notes = "") {
+    const isLocalId = (id) => typeof id === "string" && id.startsWith("local-");
+    
     if (!this.isConfigured()) {
       const local = localStorage.getItem("fitflow:attendance");
       const list = local ? JSON.parse(local) : [];
@@ -287,25 +301,55 @@ window.db = {
     const session = await this.getSession();
     if (!session) return null;
 
-    const { data, error } = await supabaseClient
-      .from("gym_attendance")
-      .insert({
-        user_id: session.user.id,
-        check_in_time: checkInTime,
-        notes: notes
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabaseClient
+        .from("gym_attendance")
+        .insert({
+          user_id: session.user.id,
+          check_in_time: checkInTime,
+          notes: notes
+        })
+        .select()
+        .single();
 
-    if (error) {
-      console.error("Error inserting gym attendance:", error);
-      throw error;
+      if (error) {
+        console.error("Error inserting gym attendance to Supabase:", error);
+        // Fallback to localStorage
+        if (error.code === "PGRST204" || error.message?.includes("gym_attendance") || error.message?.includes("schema cache")) {
+          console.warn("Table 'gym_attendance' not found. Logging check-in to localStorage instead.");
+          const local = localStorage.getItem("fitflow:attendance");
+          const list = local ? JSON.parse(local) : [];
+          const newEntry = {
+            id: "local-" + Date.now(),
+            check_in_time: checkInTime,
+            notes: notes,
+            created_at: new Date().toISOString()
+          };
+          list.push(newEntry);
+          localStorage.setItem("fitflow:attendance", JSON.stringify(list));
+          return newEntry;
+        }
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.error("Catch error inserting gym attendance:", err);
+      const local = localStorage.getItem("fitflow:attendance");
+      const list = local ? JSON.parse(local) : [];
+      const newEntry = {
+        id: "local-" + Date.now(),
+        check_in_time: checkInTime,
+        notes: notes,
+        created_at: new Date().toISOString()
+      };
+      list.push(newEntry);
+      localStorage.setItem("fitflow:attendance", JSON.stringify(list));
+      return newEntry;
     }
-    return data;
   },
 
   async deleteGymAttendance(id) {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured() || (typeof id === "string" && id.startsWith("local-"))) {
       const local = localStorage.getItem("fitflow:attendance");
       if (local) {
         let list = JSON.parse(local);
@@ -315,16 +359,36 @@ window.db = {
       return true;
     }
     
-    const { error } = await supabaseClient
-      .from("gym_attendance")
-      .delete()
-      .eq("id", id);
+    try {
+      const { error } = await supabaseClient
+        .from("gym_attendance")
+        .delete()
+        .eq("id", id);
 
-    if (error) {
-      console.error("Error deleting gym attendance:", error);
-      return false;
+      if (error) {
+        console.error("Error deleting gym attendance from Supabase:", error);
+        if (error.code === "PGRST204" || error.message?.includes("gym_attendance") || error.message?.includes("schema cache")) {
+          const local = localStorage.getItem("fitflow:attendance");
+          if (local) {
+            let list = JSON.parse(local);
+            list = list.filter(item => item.id !== id);
+            localStorage.setItem("fitflow:attendance", JSON.stringify(list));
+          }
+          return true;
+        }
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Catch error deleting gym attendance:", err);
+      const local = localStorage.getItem("fitflow:attendance");
+      if (local) {
+        let list = JSON.parse(local);
+        list = list.filter(item => item.id !== id);
+        localStorage.setItem("fitflow:attendance", JSON.stringify(list));
+      }
+      return true;
     }
-    return true;
   },
 
   subscribeToUserExercises(workoutId, callback) {
