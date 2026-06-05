@@ -641,7 +641,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
     const isMeal = !videoId && reps === "—";
 
     const item = document.createElement("article");
-    item.className = "exercise" + (done ? " done" : "");
+    item.className = "exercise" + (done ? " done" : "") + (isMeal ? " exercise--meal" : "");
     item.dataset.index = index;
     item.dataset.workoutId = workoutId;
     item.setAttribute("draggable", "true");
@@ -666,9 +666,24 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
     dragHandle.addEventListener("touchmove", handleTouchMove, { passive: false });
     dragHandle.addEventListener("touchend", handleTouchEnd);
 
+    // Parse meal food items from reps field
+    let mealItems = [];
+    if (isMeal) {
+      try {
+        const stored = localStorage.getItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`);
+        if (stored) mealItems = JSON.parse(stored);
+      } catch {}
+      // Also check if reps has been used to store JSON items (from DB)
+      if (!mealItems.length && ex.video && ex.video.startsWith("[")) {
+        try { mealItems = JSON.parse(ex.video); } catch {}
+      }
+    }
+
     let displaySubtext = "";
     if (isMeal) {
-      displaySubtext = "Meal";
+      displaySubtext = mealItems.length > 0
+        ? `${mealItems.length} item${mealItems.length > 1 ? "s" : ""}`
+        : "Tap to add food items";
     } else if (sets !== undefined && sets !== null && sets !== "—" && sets !== "") {
       displaySubtext = `${reps} reps | ${sets} sets`;
     } else {
@@ -693,6 +708,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
     check.setAttribute("aria-label", `Mark ${ex.name} complete`);
     check.addEventListener("click", async () => {
       if (list.classList.contains("editing")) return;
+      if (isMeal) return; // meal cards don't use check button
       item.classList.toggle("done");
       const isDone = item.classList.contains("done");
       
@@ -741,6 +757,7 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
 
     meta.addEventListener("click", (e) => {
       if (!list.classList.contains("editing")) return;
+      if (isMeal) return; // meal meta not editable this way
       e.stopPropagation();
       makeFieldEditable(meta, (newValue) => {
         const repsMatch = newValue.match(/(\d+)\s*reps/i);
@@ -760,7 +777,22 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
       });
     });
 
-    if (videoId) {
+    // Meal card click → open diet popup
+    if (isMeal) {
+      item.addEventListener("click", (e) => {
+        if (list.classList.contains("editing")) return;
+        if (e.target.closest(".delete-btn") || e.target.closest(".exercise-drag-handle")) return;
+        openDietMealPopup(ex, workoutId, exercises, isSupabaseLoaded, list, () => {
+          renderExercisesList(list, workoutId, exercises, isSupabaseLoaded);
+        });
+      });
+
+      // Meal thumb (fork+knife icon instead of video)
+      const mealThumb = document.createElement("div");
+      mealThumb.className = "meal-thumb";
+      mealThumb.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6h3.5a1.5 1.5 0 0 1 0 3H16v4"/></svg>`;
+      item.append(dragHandle, mealThumb, info, deleteBtn);
+    } else if (videoId) {
       const thumbBtn = document.createElement("button");
       thumbBtn.type = "button";
       thumbBtn.className = "video-thumb";
@@ -819,6 +851,148 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
 
   list.appendChild(frag);
 }
+
+// ── Diet Meal Popup ─────────────────────────────────────────────────────────
+
+function getMealItems(ex, workoutId) {
+  try {
+    const stored = localStorage.getItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  // Fallback: check if video field has JSON items
+  if (ex.video && ex.video.startsWith("[")) {
+    try { return JSON.parse(ex.video); } catch {}
+  }
+  return [];
+}
+
+function saveMealItems(ex, workoutId, items, exercises, isSupabaseLoaded) {
+  // Save to localStorage (fast, instant)
+  localStorage.setItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`, JSON.stringify(items));
+  // Encode in video field for Supabase persistence
+  ex.video = JSON.stringify(items);
+  saveAllExercises(workoutId, exercises, isSupabaseLoaded);
+}
+
+function openDietMealPopup(ex, workoutId, exercises, isSupabaseLoaded, list, onClose) {
+  // Remove existing popup
+  const existing = document.getElementById("dietMealPopup");
+  if (existing) existing.remove();
+
+  const items = getMealItems(ex, workoutId);
+
+  const overlay = document.createElement("div");
+  overlay.id = "dietMealPopup";
+  overlay.className = "diet-popup-overlay";
+
+  const panel = document.createElement("div");
+  panel.className = "diet-popup-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-label", `${ex.name} food items`);
+
+  function renderItems() {
+    const currentItems = getMealItems(ex, workoutId);
+    const listEl = panel.querySelector(".diet-popup-items");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    if (currentItems.length === 0) {
+      listEl.innerHTML = `<p class="diet-popup-empty">No items yet. Add your first food item below!</p>`;
+    } else {
+      currentItems.forEach((item, i) => {
+        const chip = document.createElement("div");
+        chip.className = "diet-food-chip";
+        chip.innerHTML = `
+          <span class="diet-food-name">${escapeHtml(item.name)}</span>
+          ${item.cal ? `<span class="diet-food-cal">${escapeHtml(item.cal)} kcal</span>` : ""}
+          <button type="button" class="diet-food-del" aria-label="Remove ${escapeHtml(item.name)}" data-index="${i}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>`;
+        chip.querySelector(".diet-food-del").addEventListener("click", () => {
+          const updated = getMealItems(ex, workoutId);
+          updated.splice(i, 1);
+          saveMealItems(ex, workoutId, updated, exercises, isSupabaseLoaded);
+          renderItems();
+          onClose();
+        });
+        listEl.appendChild(chip);
+      });
+    }
+  }
+
+  panel.innerHTML = `
+    <div class="diet-popup-header">
+      <div class="diet-popup-meal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6h3.5a1.5 1.5 0 0 1 0 3H16v4"/></svg>
+      </div>
+      <div>
+        <h2 class="diet-popup-title">${escapeHtml(ex.name)}</h2>
+        <p class="diet-popup-subtitle">Track your food items</p>
+      </div>
+      <button type="button" class="diet-popup-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="diet-popup-items"></div>
+    <form class="diet-popup-form" id="dietAddForm">
+      <div class="diet-popup-inputs">
+        <input type="text" id="dietItemName" class="diet-input" placeholder="Food item (e.g. Oats, Eggs)" required autocomplete="off">
+        <input type="text" id="dietItemCal" class="diet-input diet-input--small" placeholder="kcal" autocomplete="off" inputmode="numeric">
+      </div>
+      <button type="submit" class="diet-add-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Item
+      </button>
+    </form>`;
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  // Render existing items
+  renderItems();
+
+  // Focus first input
+  requestAnimationFrame(() => {
+    const inp = panel.querySelector("#dietItemName");
+    if (inp) inp.focus();
+  });
+
+  // Close handlers
+  const close = () => {
+    overlay.classList.add("diet-popup-overlay--closing");
+    overlay.addEventListener("animationend", () => overlay.remove(), { once: true });
+    document.body.classList.remove("modal-open");
+    onClose();
+  };
+
+  panel.querySelector(".diet-popup-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function escHandler(e) {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", escHandler); }
+  });
+
+  // Add item form
+  panel.querySelector("#dietAddForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nameVal = panel.querySelector("#dietItemName").value.trim();
+    const calVal = panel.querySelector("#dietItemCal").value.trim();
+    if (!nameVal) return;
+    const updated = getMealItems(ex, workoutId);
+    updated.push({ name: nameVal, cal: calVal || "" });
+    saveMealItems(ex, workoutId, updated, exercises, isSupabaseLoaded);
+    panel.querySelector("#dietItemName").value = "";
+    panel.querySelector("#dietItemCal").value = "";
+    panel.querySelector("#dietItemName").focus();
+    renderItems();
+    onClose();
+  });
+
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(() => overlay.classList.add("diet-popup-overlay--open"));
+}
+
+
+
 
 function renderWorkoutPage() {
   const list = document.getElementById("exerciseList");
