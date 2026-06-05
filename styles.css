@@ -1176,15 +1176,14 @@ body.modal-open {
 
 .exercise-list.editing .exercise-name,
 .exercise-list.editing .exercise-meta {
-  cursor: text;
-  border-bottom: 1.5px dashed rgba(98, 80, 244, 0.35);
-  padding-bottom: 1px;
+  cursor: pointer;
 }
 
-.exercise-list.editing .exercise-name:hover,
-.exercise-list.editing .exercise-meta:hover {
-  background: rgba(98, 80, 244, 0.04);
-  border-bottom-color: var(--purple);
+@media (max-width: 520px) {
+  .exercise-list.editing .video-thumb,
+  .exercise-list.editing .exercise-thumb--plain {
+    display: none !important;
+  }
 }
 
 /* Adjust layout in mobile for user header */
