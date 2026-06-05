@@ -855,22 +855,30 @@ function renderExercisesList(list, workoutId, exercises, isSupabaseLoaded) {
 // ── Diet Meal Popup ─────────────────────────────────────────────────────────
 
 function getMealItems(ex, workoutId) {
+  // PRIORITY 1: ex.video is the Supabase authoritative source — always prefer it
+  // so cross-device realtime sync always wins over the local device cache.
+  if (ex.video && ex.video.startsWith("[")) {
+    try {
+      const fromDb = JSON.parse(ex.video);
+      // Keep the device-local cache in sync with Supabase truth
+      localStorage.setItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`, ex.video);
+      return fromDb;
+    } catch {}
+  }
+  // PRIORITY 2: device-local cache (offline / guest fallback)
   try {
     const stored = localStorage.getItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`);
     if (stored) return JSON.parse(stored);
   } catch {}
-  // Fallback: check if video field has JSON items
-  if (ex.video && ex.video.startsWith("[")) {
-    try { return JSON.parse(ex.video); } catch {}
-  }
   return [];
 }
 
 function saveMealItems(ex, workoutId, items, exercises, isSupabaseLoaded) {
-  // Save to localStorage (fast, instant)
-  localStorage.setItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`, JSON.stringify(items));
-  // Encode in video field for Supabase persistence
-  ex.video = JSON.stringify(items);
+  const json = JSON.stringify(items);
+  // Encode in video field — this is the Supabase sync vehicle
+  ex.video = json;
+  // Mirror to local cache immediately for instant UI
+  localStorage.setItem(`fitflow:meal:${workoutId}:${ex.id || ex.name}`, json);
   saveAllExercises(workoutId, exercises, isSupabaseLoaded);
 }
 
